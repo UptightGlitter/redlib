@@ -4,16 +4,6 @@
 <a class="deeper_replies" href="{{ post_link }}{{ parent_id }}">&rarr; More replies{% if more_count > 0 %} ({{ more_count }}){% endif %}</a>
 {% else if kind == "t1" %}
 <div id="{{ id }}" class="comment">
-	<div class="comment_left">
-    <p class="comment_score" title="{{ score.1 }}">
-         {% if prefs.hide_score != "on" %}
-         {{ score.0 }}
-         {% else %}
-         &#x2022;
-         {% endif %}
-    </p>
-        <div class="line"></div>
-	</div>
 	<details class="comment_right" {% if !collapsed || highlighted %}open{% endif %}>
 		<summary class="comment_data">
 			{% if author.name != "[deleted]" %}
@@ -35,6 +25,7 @@
 			</span>
 			{% endfor %}
 			{% endif %}
+			<p class="comment_score" title="{{ score.1 }}">{% if prefs.hide_score != "on" %}{{ score.0 }}{% else %}&#x2022;{% endif %}</p>
 		</summary>
 		{% if is_filtered %}
 		<div class="comment_body_filtered {% if highlighted %}highlighted{% endif %}">(Filtered content)</div>
