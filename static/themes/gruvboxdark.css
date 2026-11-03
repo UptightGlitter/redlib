@@ -11,3 +11,53 @@
 	--highlighted: #282828;
 	--shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
+
+/* Map this theme's existing colors onto Material 3 roles. No new palette. */
+.gruvboxdark {
+	color-scheme: dark;
+	--mod-green: var(--green);
+	--upvote: var(--accent);
+	--nsfw: #ff5c5d;
+	--admin: #ea0027;
+	--visited: color-mix(in srgb, var(--text) 80%, var(--background));
+	--md-sys-color-primary: var(--accent);
+	--md-sys-color-on-primary: var(--foreground);
+	--md-sys-color-primary-container: var(--accent);
+	--md-sys-color-on-primary-container: var(--foreground);
+	--md-sys-color-secondary: var(--text);
+	--md-sys-color-on-secondary: var(--background);
+	--md-sys-color-secondary-container: var(--accent);
+	--md-sys-color-on-secondary-container: var(--foreground);
+	--md-sys-color-tertiary: var(--green);
+	--md-sys-color-on-tertiary: var(--background);
+	--md-sys-color-tertiary-container: var(--highlighted);
+	--md-sys-color-on-tertiary-container: var(--text);
+	--md-sys-color-error: #ff5c5d;
+	--md-sys-color-on-error: var(--background);
+	--md-sys-color-error-container: color-mix(in srgb, #ff5c5d 22%, var(--post));
+	--md-sys-color-on-error-container: var(--text);
+	--md-sys-color-surface: var(--background);
+	--md-sys-color-on-surface: var(--text);
+	--md-sys-color-surface-variant: var(--highlighted);
+	--md-sys-color-on-surface-variant: color-mix(in srgb, var(--text) 84%, var(--background));
+	--md-sys-color-surface-dim: var(--background);
+	--md-sys-color-surface-bright: var(--highlighted);
+	--md-sys-color-surface-container-lowest: var(--background);
+	--md-sys-color-surface-container-low: var(--post);
+	--md-sys-color-surface-container: var(--outside);
+	--md-sys-color-surface-container-high: var(--highlighted);
+	--md-sys-color-surface-container-highest: var(--highlighted);
+	--md-sys-color-outline: color-mix(in srgb, var(--text) 72%, var(--background));
+	--md-sys-color-outline-variant: color-mix(in srgb, var(--text) 64%, var(--background));
+	--md-sys-color-inverse-surface: var(--text);
+	--md-sys-color-inverse-on-surface: var(--background);
+	--md-sys-color-inverse-primary: var(--accent);
+	--md-sys-color-scrim: #000000;
+	--md-sys-color-shadow: #000000;
+	--md-sys-color-background: var(--background);
+	--md-sys-color-on-background: var(--text);
+}
+
+html:has(> .gruvboxdark) {
+	color-scheme: dark;
+}

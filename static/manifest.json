@@ -2,9 +2,9 @@
 	"name": "Redlib",
 	"short_name": "Redlib",
 	"display": "standalone",
-	"background_color": "#1f1f1f",
+	"background_color": "#1a1111",
 	"description": "An alternative private front-end to Reddit",
-	"theme_color": "#1f1f1f",
+	"theme_color": "#271d1d",
 	"start_url": "/",
 	"icons": [
 		{

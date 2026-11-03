@@ -27,10 +27,14 @@
 						{% call utils::sort(["/r/", sub.name.as_str()].concat(), ["hot", "new", "top", "rising", "controversial"], sort.0) %}
 					{% endif %}
 				</div>
-				{% if sort.0 == "top" || sort.0 == "controversial" %}<select id="timeframe" name="t" title="Timeframe">
+				{% if sort.0 == "top" || sort.0 == "controversial" %}
+				<div class="field">
+					<label class="float" for="timeframe">Timeframe</label>
+					<select id="timeframe" name="t" title="Timeframe">
 					{% call utils::options(sort.1, ["hour", "day", "week", "month", "year", "all"], "day") %}
 				</select>
-				<button id="sort_submit" class="submit">
+				</div>
+				<button id="sort_submit" class="submit" title="Apply timeframe" aria-label="Apply timeframe">
 					<svg width="15" viewBox="0 0 110 100" fill="none" stroke-width="10" stroke-linecap="round">
 						<path d="M20 50 H100" />
 						<path d="M75 15 L100 50 L75 85" />
@@ -89,13 +93,8 @@
 			{% endif %}
 			{% if !sub.name.is_empty() && sub.name != "all" && sub.name != "popular" && !sub.name.contains("+") %}
 			<details class="panel" id="subreddit" open>
-				<summary id="subreddit_label">Subreddit</summary>
-				{% if sub.wiki %}
-				<div id="top">
-					<div>Posts</div>
-					<a href="/r/{{ sub.name }}/wiki/index">Wiki</a>
-				</div>
-				{% endif %}
+				<summary id="subreddit_label" class="sr-only">Subreddit</summary>
+				<div class="sub-banner"></div>
 				<div id="sub_meta">
 					<img loading="lazy" id="sub_icon" src="{{ sub.icon }}" alt="Icon for r/{{ sub.name }}">
 					<h1 id="sub_title">{{ sub.title }}</h1>
@@ -137,9 +136,16 @@
                             </a>
 						</div>
 						{% endif %}
+					</div>
 				</div>
+				{% if sub.wiki %}
+				<div id="top">
+					<div>Posts</div>
+					<a href="/r/{{ sub.name }}/wiki/index">Wiki</a>
+				</div>
+				{% endif %}
 			</details>
-			<details class="panel" id="sidebar">
+			<details class="panel" id="sidebar" open>
 				<summary id="sidebar_label">Sidebar</summary>
 				<div id="sidebar_contents">
 					{{ sub.info|safe }}

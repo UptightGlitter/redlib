@@ -1,14 +1,62 @@
-/* Dark theme setting */
-.dark{
-	--accent: #d54455;
-	--green: #5cff85;
-	--text: white;
-	--foreground: #222;
-	--background: #0f0f0f;
-	--outside: #1f1f1f;
-	--post: #161616;
-	--panel-border: 1px solid #333;
-	--highlighted: #333;
-	--visited: #aaa;
-	--shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+/* Dark theme — featured Material Design 3 scheme (seed #d54455). */
+.dark {
+	color-scheme: dark;
+
+	--md-sys-color-primary: #ffb3b5;
+	--md-sys-color-on-primary: #561d22;
+	--md-sys-color-primary-container: #733337;
+	--md-sys-color-on-primary-container: #ffdada;
+	--md-sys-color-secondary: #e6bdbd;
+	--md-sys-color-on-secondary: #44292a;
+	--md-sys-color-secondary-container: #5d3f40;
+	--md-sys-color-on-secondary-container: #ffdada;
+	--md-sys-color-tertiary: #e6c08d;
+	--md-sys-color-on-tertiary: #432c05;
+	--md-sys-color-tertiary-container: #5c421a;
+	--md-sys-color-on-tertiary-container: #ffddb1;
+	--md-sys-color-error: #ffb4ab;
+	--md-sys-color-on-error: #690005;
+	--md-sys-color-error-container: #93000a;
+	--md-sys-color-on-error-container: #ffdad6;
+	--md-sys-color-surface: #1a1111;
+	--md-sys-color-on-surface: #f0dede;
+	--md-sys-color-surface-variant: #524343;
+	--md-sys-color-on-surface-variant: #d7c1c1;
+	--md-sys-color-surface-dim: #1a1111;
+	--md-sys-color-surface-bright: #413737;
+	--md-sys-color-surface-container-lowest: #140c0c;
+	--md-sys-color-surface-container-low: #221919;
+	--md-sys-color-surface-container: #271d1d;
+	--md-sys-color-surface-container-high: #322828;
+	--md-sys-color-surface-container-highest: #3d3232;
+	--md-sys-color-outline: #9f8c8c;
+	--md-sys-color-outline-variant: #524343;
+	--md-sys-color-inverse-surface: #f0dede;
+	--md-sys-color-inverse-on-surface: #382e2e;
+	--md-sys-color-inverse-primary: #8f4a4e;
+	--md-sys-color-scrim: #000000;
+	--md-sys-color-shadow: #000000;
+	--md-sys-color-background: #1a1111;
+	--md-sys-color-on-background: #f0dede;
+
+	--accent: var(--md-sys-color-primary);
+	--text: var(--md-sys-color-on-surface);
+	--foreground: var(--md-sys-color-on-primary);
+	--background: var(--md-sys-color-surface);
+	--outside: var(--md-sys-color-surface-container);
+	--post: var(--md-sys-color-surface-container-low);
+	--highlighted: var(--md-sys-color-surface-container-highest);
+	--panel-border: 1px solid var(--md-sys-color-outline-variant);
+	--shadow: var(--md-sys-elevation-level1);
+	--visited: #c9b3b3;
+	--green: #8fd7a0;
+	--mod-green: #8fd7a0;
+	--nsfw: var(--md-sys-color-error);
+	--admin: var(--md-sys-color-error);
+	--upvote: var(--md-sys-color-primary);
+	--spoiler: var(--md-sys-color-on-surface-variant);
+}
+
+html:has(> .dark) {
+	color-scheme: dark;
 }
