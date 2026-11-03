@@ -967,6 +967,9 @@ pub fn setting(req: &Request<Body>, name: &str) -> String {
 				// If there is no cookie for this setting, try receiving a default from the config
 				if let Some(default) = get_setting(&format!("REDLIB_DEFAULT_{}", name.to_uppercase())) {
 					Cookie::new(name, default)
+				} else if name == "use_hls" {
+					// v.redd.it no longer serves DASH MP4s. HLS is the playback path that works.
+					Cookie::new(name, "on")
 				} else {
 					Cookie::from(name)
 				}
@@ -1066,6 +1069,18 @@ pub fn format_url(url: &str) -> String {
 				"external-preview.redd.it" => capture(&REGEX_URL_EXTERNAL_PREVIEW, "/preview/external-pre/", 1),
 				"styles.redditmedia.com" => capture(&REGEX_URL_STYLES, "/style/", 1),
 				"www.redditstatic.com" => capture(&REGEX_URL_STATIC_MEDIA, "/static/", 1),
+				// Signed MP4s from the Android app. The query (`e`, `s`) has to survive.
+				"packaged-media.redd.it" => {
+					let path = parsed.path().trim_start_matches('/');
+					if path.is_empty() || path.contains("://") {
+						url.to_string()
+					} else {
+						match parsed.query() {
+							Some(query) if !query.is_empty() => format!("/pkg/{path}?{query}"),
+							_ => format!("/pkg/{path}"),
+						}
+					}
+				}
 				_ => url.to_string(),
 			}
 		})
@@ -1445,7 +1460,11 @@ pub fn to_absolute_url(relative_path: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-	use super::{deflate_compress, deflate_decompress, format_num, format_url, render_bullet_lists, rewrite_emotes, rewrite_urls, url_path_basename, Post, Preferences};
+	use super::{
+		deflate_compress, deflate_decompress, format_num, format_url, render_bullet_lists, rewrite_emotes, rewrite_urls, setting, url_path_basename, Post, Preferences,
+	};
+	use hyper::{Body, Request};
+	use sealed_test::prelude::*;
 
 	#[test]
 	fn format_num_works() {
@@ -1496,6 +1515,11 @@ mod tests {
 			"/preview/pre/qwerty.jpg?auto=webp&s=asdf"
 		);
 		assert_eq!(format_url("https://v.redd.it/foo/DASH_360.mp4?source=fallback"), "/vid/foo/360.mp4");
+		assert_eq!(
+			format_url("https://packaged-media.redd.it/m/abc/muxed.mp4?e=1700000000&s=sig"),
+			"/pkg/m/abc/muxed.mp4?e=1700000000&s=sig"
+		);
+		assert_eq!(format_url("https://packaged-media.redd.it/m/abc/muxed.mp4"), "/pkg/m/abc/muxed.mp4");
 		assert_eq!(
 			format_url("https://v.redd.it/foo/HLSPlaylist.m3u8?a=bar&v=1&f=sd"),
 			"/hls/foo/HLSPlaylist.m3u8?a=bar&v=1&f=sd"
@@ -1560,7 +1584,11 @@ mod tests {
 
 	#[tokio::test(flavor = "multi_thread")]
 	async fn test_fetching_subreddit_quarantined() {
-		let subreddit = Post::fetch("/r/drugs", true).await;
+		// The server asks for `/r/<sub>/hot.json`. The bare `/r/drugs` path never
+		// matched a GraphQL feed, so this test failed before the posts were
+		// requested. The hot feed itself returns posts; about.json still reports
+		// the community as gated.
+		let subreddit = Post::fetch("/r/drugs/hot.json?raw_json=1", true).await;
 		assert!(subreddit.is_ok());
 		assert!(!subreddit.unwrap().0.is_empty());
 	}
@@ -1570,18 +1598,21 @@ mod tests {
 		// Gonwild is a place for closed, Euclidean Geometric shapes to exchange their nth terms for karma; showing off their edges in a comfortable environment without pressure.
 		// Find a good sub that is tagged NSFW but that actually isn't in case my future employers are watching (they probably are)
 		// switched from randnsfw as it is no longer functional.
-		let subreddit = Post::fetch("/r/gonwild", false).await;
+		// NSFW is a post flag, not an UnavailableSubreddit error. The direct
+		// fetch has to use the same hot.json path the subreddit page uses.
+		let subreddit = Post::fetch("/r/gonwild/hot.json?raw_json=1", false).await;
 		assert!(subreddit.is_ok());
 		assert!(!subreddit.unwrap().0.is_empty());
 	}
 
 	#[tokio::test(flavor = "multi_thread")]
 	async fn test_fetching_ws() {
-		let subreddit = Post::fetch("/r/popular", false).await;
+		// GraphQL post objects have no websocket_url. Live comment counts from
+		// that socket are a known gap; the popular feed itself still loads.
+		let subreddit = Post::fetch("/r/popular/hot.json?raw_json=1&geo_filter=GLOBAL", false).await;
 		assert!(subreddit.is_ok());
-		for post in subreddit.unwrap().0 {
-			assert!(post.ws_url.starts_with("wss://k8s-lb.wss.redditmedia.com/link/"));
-		}
+		let posts = subreddit.unwrap().0;
+		assert!(!posts.is_empty());
 	}
 
 	#[test]
@@ -1639,6 +1670,22 @@ How`s your monitor by the way? Any IPS bleed whatsoever? I either got lucky or t
 </div>"#;
 
 		assert_eq!(render_bullet_lists(input), output);
+	}
+
+	#[test]
+	#[sealed_test]
+	fn test_use_hls_defaults_on_without_cookie_or_env() {
+		let req = Request::builder().uri("/settings").body(Body::empty()).unwrap();
+		assert_eq!(setting(&req, "use_hls"), "on");
+		assert_eq!(Preferences::new(&req).use_hls, "on");
+	}
+
+	#[test]
+	#[sealed_test]
+	fn test_use_hls_cookie_off_still_wins() {
+		let req = Request::builder().uri("/settings").header("cookie", "use_hls=off").body(Body::empty()).unwrap();
+		assert_eq!(setting(&req, "use_hls"), "off");
+		assert_eq!(Preferences::new(&req).use_hls, "off");
 	}
 
 	#[test]

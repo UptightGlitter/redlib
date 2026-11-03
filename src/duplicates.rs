@@ -2,7 +2,7 @@
 
 use crate::client::json;
 use crate::server::RequestExt;
-use crate::subreddit::{can_access_quarantine, quarantine};
+use crate::subreddit::{can_access_quarantine, gate_or_error};
 use crate::utils::{error, filter_posts, get_filters, nsfw_landing, parse_post, template, Post, Preferences};
 
 use askama::Template;
@@ -210,12 +210,8 @@ pub async fn item(req: Request<Body>) -> Result<Response<Body>, String> {
 
 		// Process error.
 		Err(msg) => {
-			if msg == "quarantined" || msg == "gated" {
-				let sub = req.param("sub").unwrap_or_default();
-				Ok(quarantine(&req, sub, &msg))
-			} else {
-				error(req, &msg).await
-			}
+			let sub = req.param("sub").unwrap_or_default();
+			gate_or_error(req, sub, &msg, quarantined).await
 		}
 	}
 }

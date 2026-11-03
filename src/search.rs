@@ -1,9 +1,9 @@
 #![allow(clippy::cmp_owned)]
-use crate::utils::{self, catch_random, error, filter_posts, format_num, format_url, get_filters, param, redirect, setting, template, val, Post, Preferences};
+use crate::utils::{self, catch_random, filter_posts, format_num, format_url, get_filters, param, redirect, setting, template, val, Post, Preferences};
 use crate::{
 	client::json,
 	server::RequestExt,
-	subreddit::{can_access_quarantine, quarantine},
+	subreddit::{can_access_quarantine, gate_or_error},
 };
 use askama::Template;
 use hyper::{Body, Request, Response};
@@ -87,6 +87,14 @@ pub async fn find(req: Request<Body>) -> Result<Response<Body>, String> {
 	if let Ok(random) = catch_random(&sub, "/find").await {
 		return Ok(random);
 	}
+	// Search inside one sub used to skip the opt-in and render an empty page.
+	// The same about check as the subreddit page shows the wall until the cookie is set.
+	let restricted = param(&path, "restrict_sr").is_some_and(|value| !value.is_empty());
+	if restricted && !sub.is_empty() && !sub.contains('+') {
+		if let Err(msg) = crate::subreddit::subreddit_for_page(&sub, quarantined, quarantined).await {
+			return gate_or_error(req, sub, &msg, quarantined).await;
+		}
+	}
 
 	let typed = param(&path, "type").unwrap_or_default();
 
@@ -154,12 +162,8 @@ pub async fn find(req: Request<Body>) -> Result<Response<Body>, String> {
 				}))
 			}
 			Err(msg) => {
-				if msg == "quarantined" || msg == "gated" {
-					let sub = req.param("sub").unwrap_or_default();
-					Ok(quarantine(&req, sub, &msg))
-				} else {
-					error(req, &msg).await
-				}
+				let sub = req.param("sub").unwrap_or_default();
+				gate_or_error(req, sub, &msg, quarantined).await
 			}
 		}
 	}

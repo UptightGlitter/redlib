@@ -11,6 +11,7 @@ use log::{error, info, trace, warn};
 use percent_encoding::{percent_encode, CONTROLS};
 use serde_json::Value;
 use std::borrow::Cow;
+use std::io::Read;
 use std::result::Result;
 use std::sync::atomic::Ordering;
 use std::sync::atomic::{AtomicBool, AtomicU16};
@@ -402,9 +403,169 @@ fn comments_logical_path(path: &str) -> String {
 	format!("/r/{subreddit}/comments/{tail}")
 }
 
-/// Make a request to a Reddit API and parse the JSON response
-#[cached(size = 100, time = 30, result = true)]
+/// User-facing error for a body that is not Reddit's JSON API document.
+/// Uses the logical `path` (not the transport encoding) and never request headers.
+pub(crate) fn non_json_response_message(status: wreq::StatusCode, content_type: &str, body: &[u8], path: &str) -> String {
+	let text = String::from_utf8_lossy(body);
+	let visible = collapse_whitespace(&strip_markup(&text));
+	let redacted = redact_secrets(&visible).replace('|', "/");
+	let lower = redacted.to_ascii_lowercase();
+	let lead = if lower.contains("blocked by network security") {
+		"Reddit blocked this request (network security)"
+	} else if lower.contains("network policy") {
+		"Reddit blocked this request (network policy)"
+	} else if status.is_server_error() {
+		"Reddit is having issues, check if there's an outage"
+	} else {
+		"Failed to parse page JSON data"
+	};
+	let ctype = if content_type.is_empty() { "(none)" } else { content_type.trim() };
+	let snippet = truncate_chars(&redacted, 200);
+	format!("{lead}. HTTP {status}, content-type {ctype}: {snippet} | {path}")
+}
+
+fn strip_markup(input: &str) -> String {
+	let lower = input.to_ascii_lowercase();
+	let bytes = input.as_bytes();
+	let mut out = String::with_capacity(input.len());
+	let mut i = 0;
+	while i < bytes.len() {
+		if bytes[i] == b'<' {
+			let rest = &lower[i..];
+			if let Some(end_tag) = if rest.starts_with("<script") {
+				Some("</script>")
+			} else if rest.starts_with("<style") {
+				Some("</style>")
+			} else {
+				None
+			} {
+				if let Some(end) = rest.find(end_tag) {
+					i += end + end_tag.len();
+					out.push(' ');
+					continue;
+				}
+			}
+			if let Some(end) = input[i..].find('>') {
+				i += end + 1;
+				out.push(' ');
+				continue;
+			}
+		}
+		let ch = input[i..].chars().next().unwrap_or('\u{FFFD}');
+		out.push(ch);
+		i += ch.len_utf8();
+	}
+	out
+}
+
+fn collapse_whitespace(input: &str) -> String {
+	let mut out = String::with_capacity(input.len());
+	let mut pending_space = false;
+	for ch in input.chars() {
+		if ch.is_whitespace() {
+			pending_space = !out.is_empty();
+			continue;
+		}
+		if pending_space {
+			out.push(' ');
+			pending_space = false;
+		}
+		out.push(ch);
+	}
+	out
+}
+
+fn redact_secrets(input: &str) -> String {
+	let chars: Vec<char> = input.chars().collect();
+	let lower: Vec<char> = input.to_ascii_lowercase().chars().collect();
+	let mut out = String::with_capacity(input.len());
+	let mut i = 0;
+	while i < chars.len() {
+		if starts_with_chars(&lower, i, "bearer ") {
+			out.push_str("Bearer ");
+			i += "bearer ".chars().count();
+			while i < chars.len() && !chars[i].is_whitespace() {
+				i += 1;
+			}
+			out.push_str("[REDACTED]");
+			continue;
+		}
+		if starts_with_chars(&lower, i, "access_token") {
+			out.push_str("access_token");
+			i += "access_token".chars().count();
+			// JSON keys are quoted (`"access_token": "value"`).
+			if i < chars.len() && (chars[i] == '"' || chars[i] == '\'') {
+				out.push(chars[i]);
+				i += 1;
+			}
+			while i < chars.len() && matches!(chars[i], ' ' | '\t' | ':' | '=') {
+				out.push(chars[i]);
+				i += 1;
+			}
+			if i < chars.len() && (chars[i] == '"' || chars[i] == '\'') {
+				let quote = chars[i];
+				out.push(quote);
+				i += 1;
+				while i < chars.len() && chars[i] != quote {
+					i += 1;
+				}
+				out.push_str("[REDACTED]");
+				if i < chars.len() && chars[i] == quote {
+					out.push(quote);
+					i += 1;
+				}
+			} else {
+				while i < chars.len() && !chars[i].is_whitespace() && chars[i] != '&' {
+					i += 1;
+				}
+				out.push_str("[REDACTED]");
+			}
+			continue;
+		}
+		out.push(chars[i]);
+		i += 1;
+	}
+	out
+}
+
+fn starts_with_chars(haystack: &[char], at: usize, needle: &str) -> bool {
+	let needle: Vec<char> = needle.chars().collect();
+	haystack[at..].starts_with(&needle)
+}
+
+fn truncate_chars(input: &str, max_chars: usize) -> String {
+	let count = input.chars().count();
+	if count <= max_chars {
+		return input.to_string();
+	}
+	let keep = max_chars.saturating_sub(1);
+	let mut out: String = input.chars().take(keep).collect();
+	out.push('…');
+	out
+}
+
+/// Make a request to a Reddit API and parse the JSON response.
 pub async fn json(path: String, quarantine: bool) -> Result<Value, String> {
+	json_cached(path, quarantine).await
+}
+
+#[cached(size = 100, time = 30, result = true)]
+async fn json_cached(path: String, quarantine: bool) -> Result<Value, String> {
+	json_uncached(path, quarantine).await
+}
+
+/// Uncached fetch. GraphQL comment loading calls this for `/by_id` so it does not re-enter the cache.
+pub(crate) async fn json_uncached(path: String, quarantine: bool) -> Result<Value, String> {
+	// `/comments/` JSON is blocked for anonymous tokens. Listings stay on the JSON API.
+	if path.contains("/comments/") {
+		return Box::pin(crate::gql::thread(&path, quarantine)).await;
+	}
+	// Listings, about, wiki and search go straight to GraphQL. Trying the JSON
+	// route first would 403 on every page and log that block as an error.
+	if let Some(result) = crate::gql_feed::route(&path, quarantine).await {
+		return result;
+	}
+
 	// Closure to quickly build errors
 	let err = |msg: &str, e: String, path: String| -> Result<Value, String> {
 		// eprintln!("{} - {}: {}", url, msg, e);
@@ -425,6 +586,12 @@ pub async fn json(path: String, quarantine: bool) -> Result<Value, String> {
 	match reddit_get(path.clone(), quarantine).await {
 		Ok(response) => {
 			let status = response.status();
+			let content_type = response
+				.headers()
+				.get(wreq_header::CONTENT_TYPE)
+				.and_then(|value| value.to_str().ok())
+				.unwrap_or("")
+				.to_string();
 
 			let reset: Option<String> = if let (Some(remaining), Some(reset), Some(used)) = (
 				response.headers().get("x-ratelimit-remaining").and_then(|val| val.to_str().ok().map(|s| s.to_string())),
@@ -463,8 +630,14 @@ pub async fn json(path: String, quarantine: bool) -> Result<Value, String> {
 						};
 					}
 
-					// Parse the response from Reddit as JSON
-					match serde_json::from_reader(body.reader()) {
+					let mut raw = Vec::new();
+					if let Err(e) = body.reader().read_to_end(&mut raw) {
+						return err("Failed receiving body from Reddit", e.to_string(), path);
+					}
+
+					// Parse the response from Reddit as JSON. A non-JSON body (the HTML
+					// 403 block page) must not refresh or rotate the OAuth token.
+					match serde_json::from_slice(&raw) {
 						Ok(value) => {
 							let json: Value = value;
 
@@ -509,12 +682,9 @@ pub async fn json(path: String, quarantine: bool) -> Result<Value, String> {
 							}
 						}
 						Err(e) => {
-							error!("Got an invalid response from reddit {e}. Status code: {status}");
-							if status.is_server_error() {
-								Err("Reddit is having issues, check if there's an outage".to_string())
-							} else {
-								err("Failed to parse page JSON data", e.to_string(), path)
-							}
+							let detail = non_json_response_message(status, &content_type, &raw, &path);
+							error!("Got an invalid response from reddit {e}. {detail}");
+							Err(detail)
 						}
 					}
 				}
@@ -644,6 +814,46 @@ mod tests {
 	}
 
 	#[test]
+	fn test_non_json_error_names_network_block_and_strips_markup() {
+		let body = br#"<body><style>.x{color:red}</style><div>You've been blocked by network security.</div><div>If you think you've been blocked by mistake.</div></body>"#;
+		let msg = non_json_response_message(wreq::StatusCode::FORBIDDEN, "text/html", body, "/r/rust/comments/abc/.json?raw_json=1");
+		assert!(msg.contains("Reddit blocked this request (network security)"));
+		assert!(msg.contains("HTTP 403 Forbidden"));
+		assert!(msg.contains("content-type text/html"));
+		assert!(msg.contains("You've been blocked by network security. If you think you've been blocked by mistake."));
+		assert!(msg.ends_with("| /r/rust/comments/abc/.json?raw_json=1"));
+		assert!(!msg.contains("<div"));
+		assert!(!msg.contains("color:red"));
+	}
+
+	#[test]
+	fn test_non_json_error_names_network_policy() {
+		let body = b"<html><title>Blocked</title><body>whoa there, pardner! Your request has been blocked due to a network policy.</body></html>";
+		let msg = non_json_response_message(wreq::StatusCode::FORBIDDEN, "text/html", body, "/r/rust/hot.json");
+		assert!(msg.contains("Reddit blocked this request (network policy)"));
+		assert!(msg.contains("network policy"));
+		assert!(!msg.contains("<title"));
+	}
+
+	#[test]
+	fn test_non_json_error_redacts_tokens_collapses_whitespace_and_truncates() {
+		let secret = "super-secret-token";
+		let bearer = "abc.def.ghi";
+		let body = format!("nope   Bearer {bearer}\n{{\"access_token\":\"{secret}\"}}{}", " word".repeat(80));
+		let msg = non_json_response_message(wreq::StatusCode::BAD_GATEWAY, "", body.as_bytes(), "/r/x/hot.json");
+		assert!(msg.contains("Reddit is having issues, check if there's an outage"));
+		assert!(msg.contains("HTTP 502 Bad Gateway"));
+		assert!(msg.contains("content-type (none)"));
+		assert!(msg.contains("Bearer [REDACTED]"));
+		assert!(msg.contains("access_token\":\"[REDACTED]\""));
+		assert!(!msg.contains(secret));
+		assert!(!msg.contains(bearer));
+		assert!(!msg.contains("  "));
+		assert!(msg.contains('…'));
+		assert!(msg.ends_with("| /r/x/hot.json"));
+	}
+
+	#[test]
 	fn test_comments_logical_path_removes_transport_encoding() {
 		for (path, expected) in [
 			("/r/rust%2Fcomments/18t5968/title/kfbqlbc/", "/r/rust/comments/18t5968/title/kfbqlbc/"),
@@ -674,8 +884,11 @@ mod tests {
 
 	#[tokio::test(flavor = "multi_thread")]
 	async fn test_localization_popular() {
+		// PopularFeedElements does not return the JSON API's geo_filter. The
+		// listing itself still has to load.
 		let val = json(POPULAR_URL.to_string(), false).await.unwrap();
-		assert_eq!("GLOBAL", val["data"]["geo_filter"].as_str().unwrap());
+		assert!(val["data"]["children"].as_array().is_some_and(|children| !children.is_empty()));
+		assert!(val["data"].get("geo_filter").is_none());
 	}
 
 	#[tokio::test(flavor = "multi_thread")]

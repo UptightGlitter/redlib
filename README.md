@@ -45,6 +45,7 @@
 6. [Configuration](#configuration)
    - [Instance settings](#instance-settings)
    - [Default user settings](#default-user-settings)
+   - [GraphQL limitations](#graphql-limitations)
 
 ---
 
@@ -433,7 +434,7 @@ Assign a default value for each user-modifiable setting by passing environment v
 | `BLUR_SPOILER`                      | `["on", "off"]`                                                                                                                                                                                                                 | `off`         |
 | `SHOW_NSFW`                         | `["on", "off"]`                                                                                                                                                                                                                 | `off`         |
 | `BLUR_NSFW`                         | `["on", "off"]`                                                                                                                                                                                                                 | `off`         |
-| `USE_HLS`                           | `["on", "off"]`                                                                                                                                                                                                                 | `off`         |
+| `USE_HLS`                           | `["on", "off"]`                                                                                                                                                                                                                 | `on`          |
 | `HIDE_HLS_NOTIFICATION`             | `["on", "off"]`                                                                                                                                                                                                                 | `off`         |
 | `AUTOPLAY_VIDEOS`                   | `["on", "off"]`                                                                                                                                                                                                                 | `off`         |
 | `SUBSCRIPTIONS`                     | `+`-delimited list of subreddits (`sub1+sub2+sub3+...`)                                                                                                                                                                         | _(none)_      |
@@ -455,6 +456,18 @@ Redlib [supports](https://docs.rs/wreq/latest/wreq/#proxies) proxy usage using t
 - `socks4a://` is the scheme for socks4a proxy
 - `socks5://` is the scheme for socks5 proxy
 - `socks5h://` is the scheme for socks5h proxy
+
+## GraphQL limitations
+
+Listings, comments, search, and subreddit about now come from Reddit's Android GraphQL API. A few things the old JSON API provided are not in those responses:
+
+- A post inside a gated community such as r/drugs shows only the NSFW gate. The post payload does not say the community is gated. The opt-in page is on the subreddit listing, on a search restricted to that subreddit, and on the sidebar.
+- Some feeds have no PREV link. The persisted feed queries only return a forward cursor (`after`).
+- A user profile supports hot and new. Top and controversial are not offered; the persisted query returns no posts for them.
+- A comment thread loads at most 200 comments, nested up to depth 10.
+- `geo_filter` and the live `ws_url` are absent.
+- Videos without HLS do not play. `v.redd.it` now serves only `CMAF_*` files, not the old `DASH_*` MP4s, and the non-HLS player still asks for `DASH_*`. HLS is on by default. Turn it off in Settings if you want the instance JavaScript-free; those videos will not play.
+- r/rust's wiki index does not exist, and `/r/rust/wiki/faq` answers 401 to an anonymous token (it needs a login). `/r/rust/wiki/rules` does load. r/AskHistorians and r/personalfinance indexes load.
 
 ## Security
 

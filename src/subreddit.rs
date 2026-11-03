@@ -95,7 +95,9 @@ pub async fn community(req: Request<Body>) -> Result<Response<Body>, String> {
 		}
 	}
 
-	let quarantined = can_access_quarantine(&req, &sub_name) || root;
+	let opted_in = can_access_quarantine(&req, &sub_name);
+	// The old JSON client also sent the opt-in cookie for the front page.
+	let quarantined = opted_in || root;
 
 	// Handle random subreddits
 	if let Ok(random) = catch_random(&sub_name, "").await {
@@ -106,14 +108,21 @@ pub async fn community(req: Request<Body>) -> Result<Response<Body>, String> {
 		return Ok(redirect(&["/user/", &sub_name[2..]].concat()));
 	}
 
-	// Request subreddit metadata
+	// Request subreddit metadata. A gated or quarantined about error is the
+	// opt-in wall when the visitor has not accepted it. Swallowing it showed
+	// the posts (or the NSFW-hidden notice) and skipped the wall. After opt-in,
+	// keep going so a feed that really has posts can render them.
 	let sub = if !sub_name.contains('+') && sub_name != subscribed && sub_name != "popular" && sub_name != "all" {
-		// Regular subreddit
-		subreddit(&sub_name, quarantined).await.unwrap_or_default()
+		match subreddit_for_page(&sub_name, quarantined, opted_in).await {
+			Ok(sub) => sub,
+			Err(msg) => return Ok(quarantine(&req, sub_name, &msg)),
+		}
 	} else if sub_name == subscribed {
-		// Subscription feed
 		if req.uri().path().starts_with("/r/") {
-			subreddit(&sub_name, quarantined).await.unwrap_or_default()
+			match subreddit_for_page(&sub_name, quarantined, opted_in).await {
+				Ok(sub) => sub,
+				Err(msg) => return Ok(quarantine(&req, sub_name, &msg)),
+			}
 		} else {
 			Subreddit::default()
 		}
@@ -186,10 +195,9 @@ pub async fn community(req: Request<Body>) -> Result<Response<Body>, String> {
 				}))
 			}
 			Err(msg) => match msg.as_str() {
-				"quarantined" | "gated" => Ok(quarantine(&req, sub_name, &msg)),
 				"private" => error(req, &format!("r/{sub_name} is a private community")).await,
 				"banned" => error(req, &format!("r/{sub_name} has been banned from Reddit")).await,
-				_ => error(req, &msg).await,
+				_ => gate_or_error(req, sub_name, &msg, opted_in).await,
 			},
 		}
 	}
@@ -223,6 +231,45 @@ pub async fn add_quarantine_exception(req: Request<Body>) -> Result<Response<Bod
 			.into(),
 	);
 	Ok(response)
+}
+
+/// About for a community page. Gated and quarantined errors stay errors only
+/// when the visitor has not opted in, so the handler can show the wall once.
+pub(crate) async fn subreddit_for_page(name: &str, api_quarantine: bool, opted_in: bool) -> Result<Subreddit, String> {
+	match subreddit(name, api_quarantine).await {
+		Ok(sub) => Ok(sub),
+		Err(msg) if is_restriction(&msg) && !opted_in => Err(msg),
+		Err(_) => Ok(Subreddit::default()),
+	}
+}
+
+pub(crate) fn is_restriction(msg: &str) -> bool {
+	msg == "gated" || msg == "quarantined"
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum RestrictionAction {
+	OptIn,
+	Explain,
+	Other,
+}
+
+/// Opt-in is offered once. A second gated or quarantined result, after the
+/// cookie is set, is a final explanation so the wall cannot loop.
+pub(crate) fn restriction_action(opted_in: bool, msg: &str) -> RestrictionAction {
+	match msg {
+		"gated" | "quarantined" if !opted_in => RestrictionAction::OptIn,
+		"gated" | "quarantined" => RestrictionAction::Explain,
+		_ => RestrictionAction::Other,
+	}
+}
+
+pub async fn gate_or_error(req: Request<Body>, sub: String, msg: &str, opted_in: bool) -> Result<Response<Body>, String> {
+	match restriction_action(opted_in, msg) {
+		RestrictionAction::OptIn => Ok(quarantine(&req, sub, msg)),
+		RestrictionAction::Explain => error(req, &format!("r/{sub} is {msg}, and Reddit no longer shows it to Redlib")).await,
+		RestrictionAction::Other => error(req, msg).await,
+	}
 }
 
 pub fn can_access_quarantine(req: &Request<Body>, sub: &str) -> bool {
@@ -477,13 +524,7 @@ pub async fn wiki(req: Request<Body>) -> Result<Response<Body>, String> {
 			prefs: Preferences::new(&req),
 			url,
 		})),
-		Err(msg) => {
-			if msg == "quarantined" || msg == "gated" {
-				Ok(quarantine(&req, sub, &msg))
-			} else {
-				error(req, &msg).await
-			}
-		}
+		Err(msg) => gate_or_error(req, sub, &msg, quarantined).await,
 	}
 }
 
@@ -515,13 +556,15 @@ pub async fn sidebar(req: Request<Body>) -> Result<Response<Body>, String> {
 			prefs: Preferences::new(&req),
 			url,
 		})),
-		Err(msg) => {
-			if msg == "quarantined" || msg == "gated" {
-				Ok(quarantine(&req, sub, &msg))
-			} else {
-				error(req, &msg).await
-			}
-		}
+		// The feed can still be readable after opt-in when about.json stays gated.
+		Err(msg) if is_restriction(&msg) && quarantined => Ok(template(&WikiTemplate {
+			wiki: format!("<p>The sidebar for r/{sub} isn't available through Reddit's API.</p>"),
+			sub,
+			page: "Sidebar".to_string(),
+			prefs: Preferences::new(&req),
+			url,
+		})),
+		Err(msg) => gate_or_error(req, sub, &msg, quarantined).await,
 	}
 }
 
@@ -715,11 +758,32 @@ mod tests {
 		assert!(subreddit.is_ok());
 	}
 
+	#[test]
+	fn test_opt_in_is_offered_once() {
+		assert_eq!(restriction_action(false, "quarantined"), RestrictionAction::OptIn);
+		assert_eq!(restriction_action(false, "gated"), RestrictionAction::OptIn);
+		assert_eq!(restriction_action(true, "quarantined"), RestrictionAction::Explain);
+		assert_eq!(restriction_action(true, "gated"), RestrictionAction::Explain);
+		assert_eq!(restriction_action(true, "private"), RestrictionAction::Other);
+	}
+
 	#[tokio::test(flavor = "multi_thread")]
 	async fn test_gated_and_quarantined() {
-		let quarantined = subreddit("edgy", true).await;
-		assert!(quarantined.is_ok());
-		let gated = subreddit("drugs", true).await;
-		assert!(gated.is_ok());
+		// Without the cookie, about is the opt-in signal. The wall is that error.
+		for name in ["edgy", "drugs"] {
+			let err = match subreddit(name, false).await {
+				Err(err) => err,
+				Ok(_) => panic!("{name} about succeeded without the opt-in cookie"),
+			};
+			assert_eq!(restriction_action(false, &err), RestrictionAction::OptIn, "{name}: {err}");
+		}
+		// With the cookie, the feed is either the posts or a final explanation.
+		// Opt-in must not be offered again.
+		for name in ["edgy", "drugs"] {
+			match crate::utils::Post::fetch(&format!("/r/{name}/hot.json?raw_json=1"), true).await {
+				Ok((posts, _)) => assert!(!posts.is_empty(), "{name}"),
+				Err(err) => assert_eq!(restriction_action(true, &err), RestrictionAction::Explain, "{name}: {err}"),
+			}
+		}
 	}
 }

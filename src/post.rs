@@ -2,9 +2,9 @@
 use crate::client::json;
 use crate::config::get_setting;
 use crate::server::RequestExt;
-use crate::subreddit::{can_access_quarantine, quarantine};
+use crate::subreddit::{can_access_quarantine, gate_or_error};
 use crate::utils::{
-	error, format_num, get_filters, nsfw_landing, param, parse_post, rewrite_emotes, setting, template, time, val, Author, Awards, Comment, Flair, FlairPart, Post, Preferences,
+	format_num, get_filters, nsfw_landing, param, parse_post, rewrite_emotes, setting, template, time, val, Author, Awards, Comment, Flair, FlairPart, Post, Preferences,
 };
 use askama::Template;
 use hyper::{Body, Request, Response};
@@ -99,12 +99,8 @@ pub async fn item(req: Request<Body>) -> Result<Response<Body>, String> {
 		}
 		// If the Reddit API returns an error, exit and send error page to user
 		Err(msg) => {
-			if msg == "quarantined" || msg == "gated" {
-				let sub = req.param("sub").unwrap_or_default();
-				Ok(quarantine(&req, sub, &msg))
-			} else {
-				error(req, &msg).await
-			}
+			let sub = req.param("sub").unwrap_or_default();
+			gate_or_error(req, sub, &msg, quarantined).await
 		}
 	}
 }
