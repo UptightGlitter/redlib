@@ -16,6 +16,8 @@ env:
 
 jobs:
   build:
+    # Draft GitHub releases belong to the upstream repository.
+    if: github.repository == 'redlib-org/redlib'
     name: Rust project - latest
     runs-on: ubuntu-latest
     strategy:

@@ -38,7 +38,7 @@ jobs:
       # Publishing actions
 
       - name: Publish to crates.io
-        if: github.event_name == 'release'
+        if: github.repository == 'redlib-org/redlib' && github.event_name == 'release'
         run: cargo publish --no-verify --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       - name: Calculate SHA512 checksum
@@ -59,7 +59,7 @@ jobs:
 
       - name: Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-        if: github.base_ref != 'main' && github.event_name == 'release'
+        if: github.repository == 'redlib-org/redlib' && github.base_ref != 'main' && github.event_name == 'release'
         with:
           tag_name: ${{ steps.version.outputs.VERSION }}
           name: ${{ steps.version.outputs.VERSION }} - ${{ github.event.head_commit.message }}
