@@ -93,12 +93,55 @@ pub fn build_client() -> WreqClient {
 		.build();
 
 	info!("Building Wreq client with random emulation");
-	WreqClient::builder()
-		.emulation(emulation)
-		.redirect(Policy::none())
-		.dns_resolver(RedditDnsResolver)
-		.build()
-		.expect("Should always be able to build a client")
+	let mut builder = WreqClient::builder().emulation(emulation).redirect(Policy::none()).dns_resolver(RedditDnsResolver);
+
+	match configured_reddit_proxy() {
+		Ok(Some(proxy)) => builder = builder.proxy(proxy),
+		Ok(None) => {}
+		Err(msg) => {
+			// Logger may not be installed yet; stderr is the startup signal.
+			eprintln!("{msg}");
+			error!("{msg}");
+			std::process::exit(1);
+		}
+	}
+
+	builder.build().expect("Should always be able to build a client")
+}
+
+/// `REDLIB_PROXY` applies to every request on the shared Reddit client, which is
+/// also what OAuth token requests use. Unset or blank leaves the client untouched,
+/// including wreq's own `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY` handling.
+fn configured_reddit_proxy() -> Result<Option<wreq::Proxy>, String> {
+	let Ok(raw) = std::env::var("REDLIB_PROXY") else {
+		return Ok(None);
+	};
+	let raw = raw.trim();
+	if raw.is_empty() {
+		return Ok(None);
+	}
+
+	let proxy = parse_reddit_proxy(raw)?;
+	if let Some(target) = proxy_log_target(raw) {
+		info!("Reddit API client using proxy {target}");
+	}
+	Ok(Some(proxy))
+}
+
+fn parse_reddit_proxy(raw: &str) -> Result<wreq::Proxy, String> {
+	let Some(url) = url::Url::parse(raw).ok() else {
+		return Err("REDLIB_PROXY is set but is not a valid proxy URL. Use socks5, socks5h, http, or https.".to_string());
+	};
+	let target = proxy_log_target(raw).unwrap_or_else(|| url.scheme().to_string());
+	match url.scheme() {
+		"socks5" | "socks5h" | "http" | "https" => {}
+		_ => {
+			return Err(format!("REDLIB_PROXY scheme is not supported ({target}). Use socks5, socks5h, http, or https."));
+		}
+	}
+
+	// Drop the client error: its Display can echo the raw URL, including userinfo.
+	wreq::Proxy::all(raw).map_err(|_| format!("REDLIB_PROXY could not be used ({target}). Use socks5, socks5h, http, or https."))
 }
 
 pub(crate) fn proxy_for_log() -> Option<String> {
@@ -892,6 +935,23 @@ mod tests {
 		assert!(!msg.contains("  "));
 		assert!(msg.contains('…'));
 		assert!(msg.ends_with("| /r/x/hot.json"));
+	}
+
+	#[test]
+	fn test_proxy_log_target_hides_credentials() {
+		assert_eq!(proxy_log_target("socks5h://user:s3cret-pass@127.0.0.1:1080").as_deref(), Some("socks5h://127.0.0.1:1080"));
+		assert_eq!(proxy_log_target("http://alice:wonder@proxy.example:8080").as_deref(), Some("http://proxy.example:8080"));
+		assert_eq!(proxy_log_target("https://proxy.example").as_deref(), Some("https://proxy.example"));
+		let err = parse_reddit_proxy("ftp://user:s3cret-pass@evil.example:21").unwrap_err();
+		assert!(err.contains("ftp://evil.example"), "{err}");
+		assert!(!err.contains("s3cret-pass"));
+		assert!(!err.contains("user:"));
+		let bad = parse_reddit_proxy("not a url").unwrap_err();
+		assert!(!bad.contains("not a url"));
+		assert!(parse_reddit_proxy("socks5h://user:s3cret-pass@127.0.0.1:1080").is_ok());
+		assert!(parse_reddit_proxy("socks5://127.0.0.1:1080").is_ok());
+		assert!(parse_reddit_proxy("http://127.0.0.1:8080").is_ok());
+		assert!(parse_reddit_proxy("https://proxy.example:8443").is_ok());
 	}
 
 	#[test]

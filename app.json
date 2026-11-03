@@ -38,7 +38,9 @@
     "REDLIB_DEFAULT_BLUR_NSFW": {
       "required": false
     },
-    "REDLIB_USE_HLS": {
+    "REDLIB_DEFAULT_USE_HLS": {
+      "description": "Play videos with HLS. On by default, because v.redd.it no longer serves DASH MP4s.",
+      "value": "on",
       "required": false
     },
     "REDLIB_HIDE_HLS_NOTIFICATION": {
@@ -78,6 +80,9 @@
       "required": false
     },
     "REDLIB_DEFAULT_REMOVE_DEFAULT_FEEDS": {
+      "required": false
+    },
+    "REDLIB_PROXY": {
       "required": false
     }
   }

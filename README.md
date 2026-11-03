@@ -418,6 +418,7 @@ Assign a default value for each instance-specific setting by passing environment
 | `PORT`                    | Integer 0-65535 | `8080`                 | The **internal** port Redlib listens on.                                                                  |
 | `ENABLE_RSS`              | `["on", "off"]` | `off`                  | Enables RSS feed generation.                                                                              |
 | `FULL_URL`                | String          | (empty)                | Allows for proper URLs (for now, only needed by RSS)                                                      |
+| `PROXY`                   | URL             | (unset)                | Optional forward proxy for the shared Reddit client (API, OAuth, and media fetched by that client). Schemes: `socks5`, `socks5h`, `http`, `https`. Prefer `socks5h` so DNS is resolved by the proxy. See [Forward Proxies](#forward-proxies). |
 
 ## Default user settings
 
@@ -456,6 +457,17 @@ Redlib [supports](https://docs.rs/wreq/latest/wreq/#proxies) proxy usage using t
 - `socks4a://` is the scheme for socks4a proxy
 - `socks5://` is the scheme for socks5 proxy
 - `socks5h://` is the scheme for socks5h proxy
+
+`REDLIB_PROXY` pins one proxy for every request made by Redlib's Reddit client. That client also performs the OAuth token request and proxied media fetches. When the variable is unset or empty, nothing changes and the standard variables above still apply. When it is set, it replaces that automatic lookup for this client.
+
+Supported schemes are `socks5`, `socks5h`, `http`, and `https`. `socks5h` asks the proxy to resolve DNS (use this when the host running Redlib should not look up Reddit). An invalid value stops the process at startup. The error and the log line include only `scheme://host:port`, never the username or password.
+
+```bash
+REDLIB_PROXY=socks5h://127.0.0.1:1080
+REDLIB_PROXY=socks5h://user:pass@proxy.example:1080
+REDLIB_PROXY=http://proxy.example:8080
+REDLIB_PROXY=https://user:pass@proxy.example:8443
+```
 
 ## GraphQL limitations
 
