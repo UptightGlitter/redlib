@@ -185,6 +185,12 @@ pub async fn canonical_path(path: String, tries: i8) -> Result<Option<String>, S
 		return Ok(None);
 	}
 
+	// Share-link HEAD requests send the spoofed client headers. Those are rejected
+	// until the bearer token exists, so wait the same way `json` does.
+	if let Err(message) = crate::oauth::prepare_token().await {
+		return Err(format!("{message} | {path}"));
+	}
+
 	// for each URL pair, try the HEAD request
 	let res = {
 		// for url base and host in URL_PAIRS, try reddit_short_head(path.clone(), true, url_base, url_base_host) and if it succeeds, set res. else, res = None
