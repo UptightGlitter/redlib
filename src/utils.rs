@@ -1326,7 +1326,15 @@ pub fn redirect(path: &str) -> Response<Body> {
 }
 
 /// Renders a generic error landing page.
+/// A rate-limit message is HTTP 429 with `Retry-After` for every handler that
+/// calls this, including post, search, user, wiki, and duplicates.
 pub async fn error(req: Request<Body>, msg: &str) -> Result<Response<Body>, String> {
+	let (status, retry_after) = crate::rate_limit::http_status(msg);
+	error_status(req, msg, status, retry_after).await
+}
+
+/// Same error template as [`error`], with an explicit status and optional `Retry-After`.
+pub async fn error_status(req: Request<Body>, msg: &str, status: u16, retry_after: Option<u64>) -> Result<Response<Body>, String> {
 	error!("Error page rendered: {}", msg.split('|').next().unwrap_or_default());
 	let url = req.uri().to_string();
 	let body = ErrorTemplate {
@@ -1337,7 +1345,11 @@ pub async fn error(req: Request<Body>, msg: &str) -> Result<Response<Body>, Stri
 	.render()
 	.unwrap_or_default();
 
-	Ok(Response::builder().status(404).header("content-type", "text/html").body(body.into()).unwrap_or_default())
+	let mut builder = Response::builder().status(status).header("content-type", "text/html");
+	if let Some(seconds) = retry_after {
+		builder = builder.header("retry-after", seconds.to_string());
+	}
+	Ok(builder.body(body.into()).unwrap_or_default())
 }
 
 /// Renders a generic info landing page.
@@ -1465,6 +1477,27 @@ mod tests {
 	};
 	use hyper::{Body, Request};
 	use sealed_test::prelude::*;
+
+	#[tokio::test]
+	async fn test_rate_limit_error_is_429_for_any_handler() {
+		let (msg, _) = crate::rate_limit::rate_limit_error(Some("120"), None);
+		let req = Request::builder().uri("/user/spez").body(Body::empty()).unwrap();
+		let response = super::error(req, &msg).await.unwrap();
+		assert_eq!(response.status(), 429);
+		assert_eq!(response.headers().get("retry-after").unwrap(), "120");
+
+		let (plain, _) = crate::rate_limit::rate_limit_error(None, None);
+		let req = Request::builder().uri("/search").body(Body::empty()).unwrap();
+		let response = super::error(req, &plain).await.unwrap();
+		assert_eq!(response.status(), 429);
+		assert!(response.headers().get("retry-after").is_none());
+		assert!(!plain.contains("seconds"));
+
+		let req = Request::builder().uri("/r/rust/comments/abc/title").body(Body::empty()).unwrap();
+		let response = super::error(req, "Post not found").await.unwrap();
+		assert_eq!(response.status(), 404);
+		assert!(response.headers().get("retry-after").is_none());
+	}
 
 	#[test]
 	fn format_num_works() {

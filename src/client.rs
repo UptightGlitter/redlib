@@ -628,6 +628,10 @@ pub async fn json(path: String, quarantine: bool) -> Result<Value, String> {
 	json_cached(path, quarantine).await
 }
 
+// Successful bodies are memoized for 30s on top of the feed cache. A subreddit
+// page can therefore be up to `REDLIB_FEED_CACHE_SECS` (default 90) plus this
+// 30s old and still count as fresh: about 120s. This layer also covers comments
+// and the other JSON routes, so it is not folded into the feed TTL.
 #[cached(size = 100, time = 30, result = true)]
 async fn json_cached(path: String, quarantine: bool) -> Result<Value, String> {
 	json_uncached(path, quarantine).await
@@ -665,6 +669,13 @@ pub(crate) async fn json_uncached(path: String, quarantine: bool) -> Result<Valu
 	match reddit_get(path.clone(), quarantine).await {
 		Ok(response) => {
 			let status = response.status();
+			if status.as_u16() == 429 {
+				let (msg, _) = crate::rate_limit::rate_limit_error(
+					response.headers().get("retry-after").and_then(|val| val.to_str().ok()),
+					response.headers().get("x-ratelimit-reset").and_then(|val| val.to_str().ok()),
+				);
+				return Err(msg);
+			}
 			let content_type = response
 				.headers()
 				.get(wreq_header::CONTENT_TYPE)

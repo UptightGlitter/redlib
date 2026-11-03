@@ -433,7 +433,9 @@ pub async fn proxy_commit_info() -> Result<Response<Body>, String> {
 
 #[cached(time = 600)]
 async fn fetch_commit_info() -> String {
-	let url = "https://github.com/redlib-org/redlib/commits/main.atom";
+	// This fork's own history. The embedded GIT_HASH is a commit on this repo,
+	// so the update check has to read this feed rather than redlib-org/redlib.
+	let url = "https://github.com/UptightGlitter/redlib/commits/main.atom";
 
 	CLIENT.get(url).send().await.expect("Failed to request GitHub").text().await.expect("Failed to read body")
 }

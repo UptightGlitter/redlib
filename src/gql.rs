@@ -141,6 +141,11 @@ pub(crate) async fn query(operation: &str, hash: &str, variables: &Value, path: 
 		}
 		let res = builder.json(&body).send().await.map_err(|err| format!("{operation} request failed: {err} | {path}"))?;
 		let status = res.status();
+		if status.as_u16() == 429 {
+			let (msg, _) = crate::rate_limit::rate_limit_error(header_str(&res, "retry-after").as_deref(), header_str(&res, "x-ratelimit-reset").as_deref());
+			debug!("GraphQL {operation} HTTP 429");
+			return Err(msg);
+		}
 		let content_type = res
 			.headers()
 			.get(wreq::header::CONTENT_TYPE)
@@ -168,6 +173,10 @@ pub(crate) async fn query(operation: &str, hash: &str, variables: &Value, path: 
 		debug!("GraphQL {operation} returned partial errors; retrying once");
 	}
 	Ok(response)
+}
+
+fn header_str(response: &wreq::Response, name: &str) -> Option<String> {
+	response.headers().get(name).and_then(|value| value.to_str().ok()).map(str::to_string)
 }
 
 fn graphql_failure(operation: &str, status: wreq::StatusCode, response: &Value) -> String {

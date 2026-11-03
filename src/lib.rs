@@ -7,6 +7,7 @@ pub mod instance_info;
 pub mod oauth;
 pub mod oauth_resources;
 pub mod post;
+pub mod rate_limit;
 pub mod search;
 pub mod server;
 pub mod settings;

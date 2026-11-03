@@ -2028,6 +2028,8 @@ body > footer {
 	text-align: center;
 }
 #error h1, #message h1, #wall h1, #nsfw_landing h1 { margin-bottom: 12px; }
+/* The body font's 20px line-height is inherited by this 2em title, so a wrapped sentence overlaps. */
+#error h1 { line-height: 1.35; }
 #error a, #nsfw_landing a, .listing_warn a { color: var(--md-sys-color-primary); }
 .listing_warn, center {
 	display: block;

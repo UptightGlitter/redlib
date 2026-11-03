@@ -194,11 +194,15 @@ pub async fn community(req: Request<Body>) -> Result<Response<Body>, String> {
 					no_posts,
 				}))
 			}
-			Err(msg) => match msg.as_str() {
-				"private" => error(req, &format!("r/{sub_name} is a private community")).await,
-				"banned" => error(req, &format!("r/{sub_name} has been banned from Reddit")).await,
-				_ => gate_or_error(req, sub_name, &msg, opted_in).await,
-			},
+			Err(msg) => {
+				if sub_name.contains('+') {
+					return error(req, &feed_error_text(&sub_name, &msg)).await;
+				}
+				match msg.as_str() {
+					"private" | "banned" => error(req, &feed_error_text(&sub_name, &msg)).await,
+					_ => gate_or_error(req, sub_name, &msg, opted_in).await,
+				}
+			}
 		}
 	}
 }
@@ -240,6 +244,22 @@ pub(crate) async fn subreddit_for_page(name: &str, api_quarantine: bool, opted_i
 		Ok(sub) => Ok(sub),
 		Err(msg) if is_restriction(&msg) && !opted_in => Err(msg),
 		Err(_) => Ok(Subreddit::default()),
+	}
+}
+
+/// Combined homes must not be described as one banned community named `a+b`.
+pub(crate) fn feed_error_text(sub_name: &str, msg: &str) -> String {
+	if crate::rate_limit::is_rate_limit(msg) || msg.starts_with("None of your subscriptions could be loaded") {
+		return msg.to_string();
+	}
+	if sub_name.contains('+') {
+		let names = sub_name.split('+').filter(|name| !name.is_empty()).collect::<Vec<_>>().join(", ");
+		return format!("None of your subscriptions could be loaded ({names}): {msg}");
+	}
+	match msg {
+		"private" => format!("r/{sub_name} is a private community"),
+		"banned" => format!("r/{sub_name} has been banned from Reddit"),
+		_ => msg.to_string(),
 	}
 }
 
@@ -751,6 +771,18 @@ fn get_mime_type(url: &str) -> &'static str {
 #[cfg(test)]
 mod tests {
 	use super::*;
+
+	#[test]
+	fn test_combined_home_error_is_not_a_ban() {
+		assert_eq!(
+			feed_error_text("BeloHorizonte+privacy", "banned"),
+			"None of your subscriptions could be loaded (BeloHorizonte, privacy): banned"
+		);
+		assert_eq!(feed_error_text("rust", "banned"), "r/rust has been banned from Reddit");
+		assert_eq!(feed_error_text("rust", "private"), "r/rust is a private community");
+		let limited = crate::rate_limit::rate_limit_error(Some("7"), None).0;
+		assert_eq!(feed_error_text("a+b", &limited), limited);
+	}
 
 	#[tokio::test(flavor = "multi_thread")]
 	async fn test_fetching_subreddit() {

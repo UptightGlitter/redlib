@@ -20,6 +20,9 @@ fn main() {
 			.stdout,
 	)
 	.unwrap_or_default();
-	let git_hash = if output == String::default() { "dev".into() } else { output };
+	// `git rev-parse` prints a trailing newline. The atom feed's commit id does
+	// not, so the stored hash has to be the bare sha or the update check never matches.
+	let git_hash = output.trim();
+	let git_hash = if git_hash.is_empty() { "dev" } else { git_hash };
 	println!("cargo:rustc-env=GIT_HASH={git_hash}");
 }

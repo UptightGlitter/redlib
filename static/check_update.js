@@ -5,26 +5,29 @@ async function checkInstanceUpdateStatus() {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(text, "application/xml");
         const entries = xmlDoc.getElementsByTagName('entry');
-        const localCommit = document.getElementById('git_commit').dataset.value;
+        const commitEl = document.getElementById('git_commit');
+        const localCommit = ((commitEl && commitEl.dataset.value) || '').trim();
 
         let statusMessage = '';
 
         if (entries.length > 0) {
             const commitHashes = Array.from(entries).map(entry => {
-                const id = entry.getElementsByTagName('id')[0].textContent;
-                return id.split('/').pop();
+                const id = entry.getElementsByTagName('id')[0].textContent || '';
+                return id.split('/').pop().trim();
             });
 
             const commitIndex = commitHashes.indexOf(localCommit);
 
-            if (commitIndex === 0) {
+            if (!localCommit || localCommit === 'dev') {
+                statusMessage = '⚠️ This build has no git commit, so it cannot be compared with UptightGlitter/redlib.';
+            } else if (commitIndex === 0) {
                 statusMessage = '✅ Instance is up to date.';
             } else if (commitIndex > 0) {
                 statusMessage = `⚠️ This instance is not up to date and is ${commitIndex} commits old. Test and confirm on an up-to-date instance before reporting.`;
-                document.getElementById('error-446').remove();
+                document.getElementById('error-446')?.remove();
             } else {
-                statusMessage = `⚠️ This instance is not up to date and is at least ${commitHashes.length} commits old. Test and confirm on an up-to-date instance before reporting.`;
-                document.getElementById('error-446').remove();
+                statusMessage = `⚠️ This build's commit is not in the recent history of UptightGlitter/redlib main (${commitHashes.length} commits in the feed).`;
+                document.getElementById('error-446')?.remove();
             }
         } else {
             statusMessage = '⚠️ Unable to fetch commit information.';

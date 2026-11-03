@@ -15,11 +15,13 @@ use crate::gql::is_id;
 use crate::gql::{awards, content_html, flair_parts, query, secure_media, stored_url, timestamp, MAX_CURSOR_LEN};
 use crate::utils::{format_url, param};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
+use cached::Cached;
 use log::debug;
 use regex::Regex;
 use serde_json::{json as json_value, Value};
 use std::collections::{HashMap, VecDeque};
-use std::sync::LazyLock;
+use std::sync::{LazyLock, Mutex};
+use std::time::{Duration, Instant};
 
 // Persisted query IDs from the Android app (see CLAUDE.md)
 const SUBREDDIT_FEED_HASH: &str = "97046e2a48050f10a507db354a8da60955ffccb586dcf63163bdfc6610d5cf7a";
@@ -37,6 +39,8 @@ const COMMENTS_BY_IDS_HASH: &str = "51ab9f2e0eb87b6dac9aac02012ba7046049e516ec55
 const SEARCH_POSTS_HASH: &str = "8610e33521c90caa8d12576800c18b708ce0d19df3dfac8e2aad55d9860e4bf9";
 const SEARCH_SUBREDDITS_HASH: &str = "a3333069c1ead3ceec6d9bf4da4185ff584f69d0ba8b586e545b32ea62170932";
 const PAGE_SIZE: usize = 25;
+/// In-flight `SubredditFeedElements` calls while building one combined page.
+const COMBINED_CONCURRENCY: usize = 4;
 // r/all returns ~7 posts on its first page and ~25 after, whatever is asked for
 const ALL_MAX_REQUESTS: usize = 3;
 
@@ -157,6 +161,157 @@ fn listing(posts: Vec<Value>, after: &str) -> Value {
 	json_value!({ "kind": "Listing", "data": { "children": posts, "after": if after.is_empty() { Value::Null } else { after.into() } } })
 }
 
+/// One subreddit in a combined feed. A failure is logged without tokens and
+/// skipped. Stickied posts are dropped; they belong on that subreddit's own page.
+fn push_sub_result(feeds: &mut Vec<(String, Vec<Value>)>, failures: &mut Vec<(String, String)>, sub: String, result: Result<(Vec<Value>, String), String>) {
+	match result {
+		Ok((posts, _)) => feeds.push((sub, posts.into_iter().filter(|p| p["data"]["stickied"] != true).collect())),
+		Err(e) => {
+			let e = crate::oauth::redact_credentials(&e);
+			debug!("Skipping r/{sub} in combined feed: {e}");
+			failures.push((sub, e));
+		}
+	}
+}
+
+/// Every sub failed. A rate-limit message is kept intact so the page can be a 429.
+pub(crate) fn subscriptions_unavailable(failures: &[(String, String)]) -> String {
+	if let Some((_, msg)) = failures.iter().find(|(_, msg)| crate::rate_limit::is_rate_limit(msg)) {
+		return msg.clone();
+	}
+	let names = failures.iter().map(|(sub, _)| sub.as_str()).collect::<Vec<_>>().join(", ");
+	let first = failures.first().map(|(_, msg)| msg.as_str()).unwrap_or("No posts found");
+	if names.is_empty() {
+		"None of your subscriptions could be loaded".to_string()
+	} else {
+		format!("None of your subscriptions could be loaded ({names}): {first}")
+	}
+}
+
+/// `(sub, sort, time filter, cursor)` so a combined page and a single-sub page share one entry.
+#[derive(Clone, Hash, PartialEq, Eq)]
+struct FeedKey {
+	sub: String,
+	sort: String,
+	range: String,
+	after: String,
+}
+
+#[derive(Clone)]
+struct PageEntry {
+	posts: Vec<Value>,
+	after: String,
+	stored: Instant,
+}
+
+/// Fresh hits use a 256-entry LRU. A separate 2048-entry LRU keeps the same
+/// pages for 10 minutes, so a burst of new keys cannot evict one that a later
+/// 429 still needs. Each entry is one subreddit listing.
+/// `json_cached` adds another 30s on top of the fresh TTL (see `client::json_cached`).
+struct FeedCache {
+	fresh_store: Mutex<cached::TimedSizedCache<FeedKey, PageEntry>>,
+	stale_store: Mutex<cached::TimedSizedCache<FeedKey, PageEntry>>,
+	fresh: Duration,
+	stale: Duration,
+}
+
+impl FeedCache {
+	fn new(fresh: Duration, stale: Duration, fresh_size: usize, stale_size: usize) -> Self {
+		Self {
+			fresh_store: Mutex::new(cached::TimedSizedCache::with_size_and_lifespan(fresh_size, fresh)),
+			stale_store: Mutex::new(cached::TimedSizedCache::with_size_and_lifespan(stale_size, stale)),
+			fresh,
+			stale,
+		}
+	}
+
+	fn insert_at(&self, key: FeedKey, posts: Vec<Value>, after: String, stored: Instant) {
+		let entry = PageEntry { posts, after, stored };
+		{
+			let mut guard = self.fresh_store.lock().unwrap_or_else(|err| err.into_inner());
+			guard.cache_set(key.clone(), entry.clone());
+		}
+		let mut guard = self.stale_store.lock().unwrap_or_else(|err| err.into_inner());
+		guard.cache_set(key, entry);
+	}
+
+	fn insert(&self, key: FeedKey, posts: Vec<Value>, after: String) {
+		self.insert_at(key, posts, after, Instant::now());
+	}
+
+	fn fresh(&self, key: &FeedKey) -> Option<(Vec<Value>, String)> {
+		self.lookup(key, Instant::now(), false)
+	}
+
+	fn stale(&self, key: &FeedKey) -> Option<(Vec<Value>, String)> {
+		self.lookup(key, Instant::now(), true)
+	}
+
+	fn lookup(&self, key: &FeedKey, now: Instant, allow_stale: bool) -> Option<(Vec<Value>, String)> {
+		let store = if allow_stale { &self.stale_store } else { &self.fresh_store };
+		let mut guard = store.lock().unwrap_or_else(|err| err.into_inner());
+		let entry = cached::Cached::cache_get(&mut *guard, key)?.clone();
+		let age = now.saturating_duration_since(entry.stored);
+		let limit = if allow_stale { self.stale } else { self.fresh };
+		if age < limit {
+			Some((entry.posts, entry.after))
+		} else {
+			None
+		}
+	}
+}
+
+fn feed_cache_fresh_ttl() -> Duration {
+	let seconds = std::env::var("REDLIB_FEED_CACHE_SECS").ok().and_then(|value| value.parse::<u64>().ok()).unwrap_or(90);
+	Duration::from_secs(seconds.clamp(60, 120))
+}
+
+static FEED_CACHE: LazyLock<FeedCache> = LazyLock::new(|| FeedCache::new(feed_cache_fresh_ttl(), Duration::from_secs(600), 256, 2048));
+
+fn cached_feed(key: &FeedKey) -> Option<(Vec<Value>, String)> {
+	FEED_CACHE.fresh(key)
+}
+
+/// A 429 or another short-lived failure can fall back to the last good page for this key.
+fn is_transient_feed_error(err: &str) -> bool {
+	crate::rate_limit::is_rate_limit(err) || err.contains("timed out") || err.contains("request failed") || err.contains("HTTP 5")
+}
+
+fn settle_fetch(cache: &FeedCache, key: &FeedKey, result: Result<(Vec<Value>, String), String>) -> Result<(Vec<Value>, String), String> {
+	match result {
+		Ok((posts, after)) => {
+			cache.insert(key.clone(), posts.clone(), after.clone());
+			Ok((posts, after))
+		}
+		Err(err) if is_transient_feed_error(&err) => {
+			if let Some(stale) = cache.stale(key) {
+				debug!("Serving a cached r/{} feed after a transient Reddit error", key.sub);
+				Ok(stale)
+			} else {
+				Err(err)
+			}
+		}
+		Err(err) => Err(err),
+	}
+}
+
+static INFLIGHT: LazyLock<Mutex<HashMap<FeedKey, std::sync::Arc<tokio::sync::Mutex<()>>>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
+
+async fn single_flight(key: &FeedKey) -> tokio::sync::OwnedMutexGuard<()> {
+	let flight = {
+		let mut inflight = INFLIGHT.lock().unwrap_or_else(|err| err.into_inner());
+		inflight.entry(key.clone()).or_insert_with(|| std::sync::Arc::new(tokio::sync::Mutex::new(()))).clone()
+	};
+	flight.lock_owned().await
+}
+
+fn end_flight(key: &FeedKey) {
+	let mut inflight = INFLIGHT.lock().unwrap_or_else(|err| err.into_inner());
+	if inflight.get(key).is_some_and(|flight| std::sync::Arc::strong_count(flight) == 1) {
+		inflight.remove(key);
+	}
+}
+
 #[derive(Clone)]
 struct Feed {
 	sort: String,
@@ -187,6 +342,32 @@ impl Feed {
 	}
 
 	async fn subreddit(&self, name: &str, after: &str) -> Result<(Vec<Value>, String), String> {
+		let key = self.feed_key(name, after);
+		if let Some(hit) = cached_feed(&key) {
+			return Ok(hit);
+		}
+		// One fetch per key. The next caller waits, then reads the page just stored.
+		let _flight = single_flight(&key).await;
+		let result = if let Some(hit) = cached_feed(&key) {
+			Ok(hit)
+		} else {
+			settle_fetch(&FEED_CACHE, &key, self.fetch_subreddit(name, after).await)
+		};
+		drop(_flight);
+		end_flight(&key);
+		result
+	}
+
+	fn feed_key(&self, name: &str, after: &str) -> FeedKey {
+		FeedKey {
+			sub: name.to_lowercase(),
+			sort: self.sort.clone(),
+			range: self.range.clone().unwrap_or_default(),
+			after: after.to_string(),
+		}
+	}
+
+	async fn fetch_subreddit(&self, name: &str, after: &str) -> Result<(Vec<Value>, String), String> {
 		let mut variables = self.variables(after);
 		variables["subredditName"] = name.into();
 		variables["includeSubredditInPosts"] = true.into();
@@ -236,30 +417,40 @@ impl Feed {
 	/// Merges the feeds of several subreddits, like the JSON API's `r/a+b`, which
 	/// GraphQL lacks. Each page takes posts from the front of each subreddit's
 	/// feed, so the cursors (`sub:t3_<id>,…`) say how far each one got.
+	///
+	/// At most `COMBINED_CONCURRENCY` subreddit queries run at once. Each one
+	/// still asks for `PAGE_SIZE` posts: the merged 25 can all come from a
+	/// single subreddit, so a shorter page would drop posts that belong on it.
 	async fn combined(&self, subs: Vec<String>) -> Result<(Vec<Value>, String), String> {
 		let cursors = self.cursors();
-		let tasks: Vec<_> = subs
-			.iter()
-			.map(|sub| {
-				let (feed, sub) = (self.clone(), sub.clone());
-				let after = cursors.get(&sub).cloned().unwrap_or_default();
-				tokio::spawn(async move { feed.subreddit(&sub, &after).await })
-			})
-			.collect();
+		let sem = std::sync::Arc::new(tokio::sync::Semaphore::new(COMBINED_CONCURRENCY));
+		let mut tasks = Vec::with_capacity(subs.len());
+		for sub in &subs {
+			let permit = sem.clone().acquire_owned().await.map_err(|_| "Combined feed was cancelled".to_string())?;
+			let feed = self.clone();
+			let sub = sub.clone();
+			let after = cursors.get(&sub).cloned().unwrap_or_default();
+			tasks.push(tokio::spawn(async move {
+				let result = feed.subreddit(&sub, &after).await;
+				drop(permit);
+				(sub, result)
+			}));
+		}
+
 		let mut feeds = Vec::new();
-		let mut error = None;
-		for (sub, task) in subs.iter().zip(tasks) {
-			match task.await.map_err(|e| e.to_string()).and_then(|r| r) {
-				// Stickied posts belong to the subreddit's own page
-				Ok((posts, _)) => feeds.push((sub.clone(), posts.into_iter().filter(|p| p["data"]["stickied"] != true).collect())),
+		let mut failures = Vec::new();
+		for task in tasks {
+			match task.await {
+				Ok((sub, result)) => push_sub_result(&mut feeds, &mut failures, sub, result),
 				Err(e) => {
-					debug!("Skipping r/{sub} in combined feed: {e}");
-					error.get_or_insert(e);
+					let e = crate::oauth::redact_credentials(&e.to_string());
+					debug!("Skipping a subreddit in combined feed: {e}");
+					failures.push(("combined".into(), e));
 				}
 			}
 		}
 		if feeds.is_empty() {
-			return Err(error.unwrap_or_else(|| "No posts found".to_string()));
+			return Err(subscriptions_unavailable(&failures));
 		}
 		Ok(self.merge(feeds, cursors))
 	}
@@ -1067,6 +1258,147 @@ mod tests {
 		assert_eq!(posts[0]["data"]["name"], "t3_r1");
 		assert_eq!(posts[1]["data"]["name"], "t3_g1");
 		assert_eq!(posts[2]["data"]["name"], "t3_r2");
+	}
+
+	#[test]
+	fn test_combined_cursor_round_trip() {
+		let post = |name: &str, created: f64| json_value!({ "data": { "name": name, "stickied": false, "score": 1, "created_utc": created } });
+		let feed = Feed::new("/r/rust+privacy/new.json", "new", &FEED_SORTS).unwrap();
+		let (_, after) = feed.merge(
+			vec![
+				("rust".into(), vec![post("t3_new", 300.0), post("t3_old", 100.0)]),
+				("privacy".into(), vec![post("t3_mid", 200.0)]),
+			],
+			HashMap::new(),
+		);
+		let next = Feed::new(&format!("/r/rust+privacy/new.json?after={after}"), "new", &FEED_SORTS).unwrap();
+		let cursors = next.cursors();
+		assert_eq!(cursors.get("rust").map(String::as_str), Some("t3_old"));
+		assert_eq!(cursors.get("privacy").map(String::as_str), Some("t3_mid"));
+	}
+
+	#[test]
+	fn test_combined_feed_skips_a_failed_sub_and_errors_only_when_all_fail() {
+		let mut feeds = Vec::new();
+		let mut failures = Vec::new();
+		push_sub_result(
+			&mut feeds,
+			&mut failures,
+			"rust".into(),
+			Ok((
+				vec![
+					json_value!({ "data": { "name": "t3_ok", "stickied": false } }),
+					json_value!({ "data": { "name": "t3_pin", "stickied": true } }),
+				],
+				String::new(),
+			)),
+		);
+		push_sub_result(&mut feeds, &mut failures, "gone".into(), Err("Bearer secret-token blocked".into()));
+		let logged = failures.first().map(|(_, msg)| msg.clone()).unwrap_or_default();
+		assert!(logged.contains("[REDACTED]"), "{logged}");
+		assert!(!logged.contains("secret-token"), "{logged}");
+		assert_eq!(feeds.len(), 1);
+		assert_eq!(feeds[0].0, "rust");
+		assert_eq!(feeds[0].1.len(), 1);
+		assert_eq!(feeds[0].1[0]["data"]["name"], "t3_ok");
+
+		let mut feeds = Vec::new();
+		let mut failures = Vec::new();
+		push_sub_result(&mut feeds, &mut failures, "a".into(), Err("first failure".into()));
+		push_sub_result(&mut feeds, &mut failures, "b".into(), Err("banned".into()));
+		assert!(feeds.is_empty());
+		let msg = subscriptions_unavailable(&failures);
+		assert_eq!(msg, "None of your subscriptions could be loaded (a, b): first failure");
+		let limited = subscriptions_unavailable(&[("rust".into(), crate::rate_limit::rate_limit_error(Some("7"), None).0)]);
+		assert!(crate::rate_limit::is_rate_limit(&limited));
+	}
+
+	#[test]
+	fn test_feed_cache_hit_ttl_and_cursor() {
+		let cache = FeedCache::new(Duration::from_secs(90), Duration::from_secs(600), 2, 8);
+		let first = FeedKey {
+			sub: "rust".into(),
+			sort: "HOT".into(),
+			range: String::new(),
+			after: String::new(),
+		};
+		let next = FeedKey {
+			after: "t3_old".into(),
+			..first.clone()
+		};
+		let posts = vec![json_value!({ "data": { "name": "t3_old" } })];
+		cache.insert(first.clone(), posts.clone(), "t3_old".into());
+		assert_eq!(cache.fresh(&first).unwrap().1, "t3_old");
+		assert!(cache.fresh(&next).is_none(), "a later page must not reuse the first page");
+
+		let aged = Instant::now().checked_sub(Duration::from_secs(100)).unwrap();
+		cache.insert_at(next.clone(), posts, "t3_older".into(), aged);
+		assert!(cache.lookup(&next, Instant::now(), false).is_none());
+		assert_eq!(cache.lookup(&next, Instant::now(), true).unwrap().1, "t3_older");
+		let expired = Instant::now().checked_sub(Duration::from_secs(700)).unwrap();
+		cache.insert_at(next.clone(), vec![], String::new(), expired);
+		assert!(cache.lookup(&next, Instant::now(), true).is_none());
+
+		let a = FeedKey {
+			sub: "a".into(),
+			sort: "HOT".into(),
+			range: String::new(),
+			after: String::new(),
+		};
+		let b = FeedKey { sub: "b".into(), ..a.clone() };
+		let c = FeedKey { sub: "c".into(), ..a.clone() };
+		cache.insert(a.clone(), vec![], String::new());
+		cache.insert(b.clone(), vec![], String::new());
+		cache.insert(c.clone(), vec![], String::new());
+		assert!(cache.fresh(&a).is_none(), "the LRU cap drops the oldest feed");
+		assert!(cache.fresh(&c).is_some());
+		assert!(cache.stale(&a).is_some(), "the larger stale store still has the evicted page");
+	}
+
+	#[test]
+	fn test_stale_feed_is_served_when_the_fetch_is_rate_limited() {
+		let cache = FeedCache::new(Duration::from_secs(90), Duration::from_secs(600), 2, 8);
+		let home = FeedKey {
+			sub: "rust".into(),
+			sort: "HOT".into(),
+			range: String::new(),
+			after: String::new(),
+		};
+		cache.insert(home.clone(), vec![json_value!({ "data": { "name": "t3_home" } })], "t3_home".into());
+		let limited = crate::rate_limit::rate_limit_error(Some("30"), None).0;
+		let served = settle_fetch(&cache, &home, Err(limited)).unwrap();
+		assert_eq!(served.1, "t3_home");
+
+		let other = FeedKey {
+			sub: "privacy".into(),
+			..home.clone()
+		};
+		let missing = settle_fetch(&cache, &other, Err(crate::rate_limit::rate_limit_error(None, None).0));
+		assert!(missing.unwrap_err().starts_with("Reddit is rate limiting this instance"));
+		assert!(settle_fetch(&cache, &home, Err("banned".into())).is_err());
+	}
+
+	#[test]
+	fn test_stale_feed_survives_a_burst() {
+		let cache = FeedCache::new(Duration::from_secs(90), Duration::from_secs(600), 2, 8);
+		let home = FeedKey {
+			sub: "home".into(),
+			sort: "HOT".into(),
+			range: String::new(),
+			after: String::new(),
+		};
+		cache.insert(home.clone(), vec![json_value!({ "data": { "name": "t3_home" } })], "t3_home".into());
+		for n in 0..6 {
+			let key = FeedKey {
+				sub: format!("burst{n}"),
+				sort: "HOT".into(),
+				range: String::new(),
+				after: String::new(),
+			};
+			cache.insert(key, vec![], String::new());
+		}
+		assert!(cache.fresh(&home).is_none(), "the small LRU forgets the home during the burst");
+		assert_eq!(cache.stale(&home).unwrap().1, "t3_home");
 	}
 
 	#[test]
