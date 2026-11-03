@@ -1,10 +1,9 @@
 use crate::dbg_msg;
-use crate::oauth::{force_refresh_token, token_daemon, Oauth, OauthBackendImpl};
+use crate::oauth::{force_refresh_token, Oauth, OauthBackendImpl};
 use crate::server::RequestExt;
 use crate::utils::{format_url, Post};
 use arc_swap::ArcSwap;
 use cached::proc_macro::cached;
-use futures_lite::future::block_on;
 use futures_lite::{future::Boxed, FutureExt};
 use hyper::{body::Buf, header, Body, Request as HyperRequest, Response as HyperResponse};
 use log::{error, info, trace, warn};
@@ -34,9 +33,15 @@ const ALTERNATIVE_REDDIT_DNS_HOST: &str = "dualstack.reddit.map.fastly.net";
 pub static CLIENT: LazyLock<WreqClient> = LazyLock::new(build_client);
 
 pub static OAUTH_CLIENT: LazyLock<ArcSwap<Oauth>> = LazyLock::new(|| {
-	let client = block_on(Oauth::new());
-	tokio::spawn(token_daemon());
-	ArcSwap::new(client.into())
+	// The listener must not wait on a token. Background auth yields once so this
+	// lock is finished before the task touches `OAUTH_CLIENT`.
+	if let Ok(handle) = tokio::runtime::Handle::try_current() {
+		handle.spawn(async {
+			tokio::task::yield_now().await;
+			crate::oauth::spawn_background();
+		});
+	}
+	ArcSwap::new(crate::oauth::Oauth::placeholder().into())
 });
 
 pub static OAUTH_RATELIMIT_REMAINING: AtomicU16 = AtomicU16::new(99);
@@ -94,6 +99,28 @@ pub fn build_client() -> WreqClient {
 		.dns_resolver(RedditDnsResolver)
 		.build()
 		.expect("Should always be able to build a client")
+}
+
+pub(crate) fn proxy_for_log() -> Option<String> {
+	let raw = std::env::var("REDLIB_PROXY").ok()?;
+	let raw = raw.trim();
+	if raw.is_empty() {
+		return None;
+	}
+	proxy_log_target(raw)
+}
+
+/// scheme://host:port only. Never include userinfo.
+fn proxy_log_target(raw: &str) -> Option<String> {
+	let url = url::Url::parse(raw).ok()?;
+	let host = match url.host()? {
+		url::Host::Ipv6(ip) => format!("[{ip}]"),
+		_ => url.host_str()?.to_string(),
+	};
+	Some(match url.port() {
+		Some(port) => format!("{}://{host}:{port}", url.scheme()),
+		None => format!("{}://{host}", url.scheme()),
+	})
 }
 
 /// Gets the canonical path for a resource on Reddit. This is accomplished by
@@ -546,6 +573,9 @@ fn truncate_chars(input: &str, max_chars: usize) -> String {
 
 /// Make a request to a Reddit API and parse the JSON response.
 pub async fn json(path: String, quarantine: bool) -> Result<Value, String> {
+	if let Err(message) = crate::oauth::prepare_token().await {
+		return Err(format!("{message} | {path}"));
+	}
 	json_cached(path, quarantine).await
 }
 
@@ -691,7 +721,14 @@ pub(crate) async fn json_uncached(path: String, quarantine: bool) -> Result<Valu
 				Err(e) => err("Failed receiving body from Reddit", e.to_string(), path),
 			}
 		}
-		Err(e) => err("Couldn't send request to Reddit", e, path),
+		Err(e) => {
+			let e = crate::oauth::redact_credentials(&e);
+			if e.to_ascii_lowercase().contains("proxy") || e.to_ascii_lowercase().contains("connect") || e.to_ascii_lowercase().contains("timed out") {
+				Err(format!("{} | {path}", crate::oauth::unreachable_message()))
+			} else {
+				err("Couldn't send request to Reddit", e, path)
+			}
+		}
 	}
 }
 
@@ -705,6 +742,10 @@ async fn self_check(sub: &str) -> Result<(), String> {
 }
 
 pub async fn rate_limit_check() -> Result<(), String> {
+	if !OAUTH_CLIENT.load().has_token() {
+		warn!("[⚠️] Skipping rate limit check because the OAuth token is not ready.");
+		return Ok(());
+	}
 	// First, test the Oauth client: we can perform a rate limit check if the OAuth backend is MobileSpoof; if GenericWeb, we skip the check.
 	if matches!(OAUTH_CLIENT.load().backend, OauthBackendImpl::GenericWeb(_)) {
 		warn!("[⚠️] Cannot perform rate limit check, running as GenericWeb. Skipping check.");
