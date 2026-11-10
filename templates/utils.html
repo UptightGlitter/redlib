@@ -285,14 +285,18 @@
 	{% call render_hls_notification(format!("{}%23{}", &self.url[1..].replace("&", "%26").replace("+", "%2B"), post.id)) %}
 	{% endif %}
 	{% else if post.post_type == "gallery" && post.gallery.len() > 0 %}
-	<div class="post_media_content gallery-card">
-		<a href="{{ post.permalink }}">
+	<div class="post_media_content gallery-card" data-count="{{ post.gallery.len() }}">
+		<div class="gallery-track">
 			{% for image in post.gallery %}
-				{% if loop.first %}
-				<img loading="lazy" alt="Gallery image" src="{{ image.url }}"/>
-				{% endif %}
+			<img class="gallery-slide" alt="Gallery image {{ loop.index }} of {{ post.gallery.len() }}" src="{{ image.url }}" decoding="async"{% if !loop.first %} loading="lazy"{% endif %}/>
 			{% endfor %}
-		</a>
+		</div>
+		<button type="button" class="gallery-nav prev" aria-label="Previous image" hidden>
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+		</button>
+		<button type="button" class="gallery-nav next" aria-label="Next image"{% if post.gallery.len() < 2 %} hidden{% endif %}>
+			<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+		</button>
 		<span class="gallery-count">1/{{ post.gallery.len() }}</span>
 	</div>
 	{% else if post.post_type == "gallery" %}

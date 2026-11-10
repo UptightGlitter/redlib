@@ -68,6 +68,11 @@
 					<input type="hidden" value="off" name="wide">
 					<input class="switch" type="checkbox" role="switch" name="wide" id="wide" {% if prefs.wide=="on" %}checked{% endif %}>
 				</div>
+				<div class="prefs-group">
+					<label for="fullscreen">Full screen<span class="sub">Applies after re-adding the app to the home screen.</span></label>
+					<input type="hidden" value="off" name="fullscreen">
+					<input class="switch" type="checkbox" role="switch" name="fullscreen" id="fullscreen" {% if prefs.fullscreen=="on" %}checked{% endif %}>
+				</div>
 			</fieldset>
 			<fieldset>
 				<legend>Content</legend>

@@ -15,7 +15,7 @@
 	{% call utils::sub_list(sub.name.as_str()) %}
 {% endblock %}
 
-{% block tab_search %}{% if sub.name != "" %}/r/{{ sub.name }}/search{% else %}/search{% endif %}{% endblock %}
+{% block tab_search %}{% if sub.name != "" %}/r/{{ sub.name }}/search?restrict_sr=on{% else %}/search{% endif %}{% endblock %}
 
 {% block body %}
 	<main>

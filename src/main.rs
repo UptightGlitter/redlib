@@ -11,12 +11,57 @@ use hyper::{header::HeaderValue, Body, Request, Response};
 use log::{info, warn};
 use redlib::client::{canonical_path, proxy, rate_limit_check, CLIENT};
 use redlib::server::{self, RequestExt};
-use redlib::utils::{error, redirect, ThemeAssets};
+use redlib::utils::{error, redirect, setting_or_default, ThemeAssets};
 use redlib::{config, duplicates, headers, instance_info, post, search, settings, subreddit, user};
 
 use redlib::client::OAUTH_CLIENT;
 
 // Create Services
+
+/// `/manifest.json`. `fullscreen` cookie (default on) chooses the display mode.
+/// Other fields match `static/manifest.json`. Not cached, so a settings change is picked up.
+async fn manifest(req: Request<Body>) -> Result<Response<Body>, String> {
+	let fullscreen = setting_or_default(&req, "fullscreen", "on".to_string()) != "off";
+	let display = if fullscreen {
+		"\"display\": \"fullscreen\",\n\t\"display_override\": [\"fullscreen\", \"standalone\"],"
+	} else {
+		"\"display\": \"standalone\","
+	};
+	let body = format!(
+		r##"{{
+	"name": "Redlib",
+	"short_name": "Redlib",
+	{display}
+	"background_color": "#0a0d1f",
+	"description": "An alternative private front-end to Reddit",
+	"theme_color": "#0a0d1f",
+	"start_url": "/",
+	"icons": [
+		{{
+			"src": "logo.png",
+			"sizes": "512x512",
+			"type": "image/png"
+		}},
+		{{
+			"src": "apple-touch-icon.png",
+			"sizes": "180x180"
+		}},
+		{{
+			"src": "favicon.ico",
+			"sizes": "32x32"
+		}}
+	]
+}}"##
+	);
+	Ok(
+		Response::builder()
+			.status(200)
+			.header("content-type", "application/json")
+			.header("cache-control", "no-cache")
+			.body(body.into())
+			.unwrap_or_default(),
+	)
+}
 
 // Required for the manifest to be valid
 async fn pwa_logo() -> Result<Response<Body>, String> {
@@ -220,9 +265,7 @@ async fn main() {
 
 	// Read static files
 	app.at("/style.css").get(|_| style().boxed());
-	app
-		.at("/manifest.json")
-		.get(|_| resource(include_str!("../static/manifest.json"), "application/json", false).boxed());
+	app.at("/manifest.json").get(|r| manifest(r).boxed());
 	app.at("/robots.txt").get(|_| {
 		resource(
 			if match config::get_setting("REDLIB_ROBOTS_DISABLE_INDEXING") {

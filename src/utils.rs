@@ -617,7 +617,7 @@ pub struct Params {
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Eq)]
-#[revisioned(revision = 1)]
+#[revisioned(revision = 2)]
 pub struct Preferences {
 	#[revision(start = 1)]
 	#[serde(skip_serializing, skip_deserializing)]
@@ -666,6 +666,8 @@ pub struct Preferences {
 	pub hide_score: String,
 	#[revision(start = 1)]
 	pub remove_default_feeds: String,
+	#[revision(start = 2)]
+	pub fullscreen: String,
 }
 
 fn serialize_vec_with_plus<S>(vec: &[String], serializer: S) -> Result<S::Ok, S::Error>
@@ -724,6 +726,7 @@ impl Preferences {
 			hide_awards: setting(req, "hide_awards"),
 			hide_score: setting(req, "hide_score"),
 			remove_default_feeds: setting(req, "remove_default_feeds"),
+			fullscreen: setting_or_default(req, "fullscreen", "on".to_string()),
 		}
 	}
 
@@ -1593,10 +1596,11 @@ mod tests {
 			hide_awards: "off".to_owned(),
 			hide_score: "off".to_owned(),
 			remove_default_feeds: "off".to_owned(),
+			fullscreen: "on".to_owned(),
 		};
 		let urlencoded = serde_urlencoded::to_string(prefs).expect("Failed to serialize Prefs");
 
-		assert_eq!(urlencoded, "theme=laserwave&front_page=default&layout=compact&wide=on&blur_spoiler=on&show_nsfw=off&blur_nsfw=on&hide_hls_notification=off&video_quality=best&hide_sidebar_and_summary=off&use_hls=on&autoplay_videos=on&fixed_navbar=on&disable_visit_reddit_confirmation=on&comment_sort=confidence&post_sort=top&subscriptions=memes%2Bmildlyinteresting&filters=&hide_awards=off&hide_score=off&remove_default_feeds=off");
+		assert_eq!(urlencoded, "theme=laserwave&front_page=default&layout=compact&wide=on&blur_spoiler=on&show_nsfw=off&blur_nsfw=on&hide_hls_notification=off&video_quality=best&hide_sidebar_and_summary=off&use_hls=on&autoplay_videos=on&fixed_navbar=on&disable_visit_reddit_confirmation=on&comment_sort=confidence&post_sort=top&subscriptions=memes%2Bmildlyinteresting&filters=&hide_awards=off&hide_score=off&remove_default_feeds=off&fullscreen=on");
 	}
 
 	#[test]
