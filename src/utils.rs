@@ -670,6 +670,73 @@ pub struct Preferences {
 	pub fullscreen: String,
 }
 
+/// Preferences exported before `fullscreen` was added.
+#[derive(Deserialize)]
+struct PreferencesV1 {
+	#[serde(skip_serializing, skip_deserializing)]
+	available_themes: Vec<String>,
+	theme: String,
+	front_page: String,
+	layout: String,
+	wide: String,
+	blur_spoiler: String,
+	show_nsfw: String,
+	blur_nsfw: String,
+	hide_hls_notification: String,
+	video_quality: String,
+	hide_sidebar_and_summary: String,
+	use_hls: String,
+	autoplay_videos: String,
+	fixed_navbar: String,
+	disable_visit_reddit_confirmation: String,
+	comment_sort: String,
+	post_sort: String,
+	#[serde(serialize_with = "serialize_vec_with_plus", deserialize_with = "deserialize_vec_with_plus")]
+	subscriptions: Vec<String>,
+	#[serde(serialize_with = "serialize_vec_with_plus", deserialize_with = "deserialize_vec_with_plus")]
+	filters: Vec<String>,
+	hide_awards: String,
+	hide_score: String,
+	remove_default_feeds: String,
+}
+
+impl From<PreferencesV1> for Preferences {
+	fn from(value: PreferencesV1) -> Self {
+		Self {
+			available_themes: value.available_themes,
+			theme: value.theme,
+			front_page: value.front_page,
+			layout: value.layout,
+			wide: value.wide,
+			blur_spoiler: value.blur_spoiler,
+			show_nsfw: value.show_nsfw,
+			blur_nsfw: value.blur_nsfw,
+			hide_hls_notification: value.hide_hls_notification,
+			video_quality: value.video_quality,
+			hide_sidebar_and_summary: value.hide_sidebar_and_summary,
+			use_hls: value.use_hls,
+			autoplay_videos: value.autoplay_videos,
+			fixed_navbar: value.fixed_navbar,
+			disable_visit_reddit_confirmation: value.disable_visit_reddit_confirmation,
+			comment_sort: value.comment_sort,
+			post_sort: value.post_sort,
+			subscriptions: value.subscriptions,
+			filters: value.filters,
+			hide_awards: value.hide_awards,
+			hide_score: value.hide_score,
+			remove_default_feeds: value.remove_default_feeds,
+			fullscreen: "on".to_string(),
+		}
+	}
+}
+
+pub fn deserialize_prefs(bytes: &[u8]) -> bincode::Result<Preferences> {
+	match bincode::deserialize(bytes) {
+		Ok(prefs) => Ok(prefs),
+		Err(_) => bincode::deserialize::<PreferencesV1>(bytes).map(Preferences::from),
+	}
+}
+
 fn serialize_vec_with_plus<S>(vec: &[String], serializer: S) -> Result<S::Ok, S::Error>
 where
 	S: Serializer,
@@ -1475,7 +1542,8 @@ pub fn to_absolute_url(relative_path: &str) -> String {
 #[cfg(test)]
 mod tests {
 	use super::{
-		deflate_compress, deflate_decompress, format_num, format_url, render_bullet_lists, rewrite_emotes, rewrite_urls, setting, url_path_basename, Post, Preferences,
+		deflate_compress, deflate_decompress, deserialize_prefs, format_num, format_url, render_bullet_lists, rewrite_emotes, rewrite_urls, setting, url_path_basename, Post,
+		Preferences,
 	};
 	use hyper::{Body, Request};
 	use sealed_test::prelude::*;
@@ -1750,7 +1818,7 @@ How`s your monitor by the way? Any IPS bleed whatsoever? I either got lucky or t
 		for config in KNOWN_GOOD_CONFIGS {
 			let bytes = base2048::decode(config).unwrap();
 			let decompressed = deflate_decompress(bytes).unwrap();
-			assert!(bincode::deserialize::<Preferences>(&decompressed).is_ok());
+			assert!(deserialize_prefs(&decompressed).is_ok());
 		}
 	}
 
@@ -1759,7 +1827,7 @@ How`s your monitor by the way? Any IPS bleed whatsoever? I either got lucky or t
 		for config in KNOWN_GOOD_CONFIGS {
 			let bytes = base2048::decode(config).unwrap();
 			let decompressed = deflate_decompress(bytes).unwrap();
-			let prefs: Preferences = bincode::deserialize(&decompressed).unwrap();
+			let prefs = deserialize_prefs(&decompressed).unwrap();
 			test_round_trip(&prefs, false);
 			test_round_trip(&prefs, true);
 		}

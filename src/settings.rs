@@ -5,7 +5,7 @@ use std::collections::HashMap;
 // CRATES
 use crate::server::ResponseExt;
 use crate::subreddit::join_until_size_limit;
-use crate::utils::{deflate_decompress, redirect, template, Preferences};
+use crate::utils::{deflate_decompress, deserialize_prefs, redirect, template, Preferences};
 use askama::Template;
 use cookie::Cookie;
 use futures_lite::StreamExt;
@@ -293,7 +293,7 @@ pub async fn encoded_restore(req: Request<Body>) -> Result<Response<Body>, Strin
 		.await
 		.map_err(|e| format!("Failed to decompress bytes: {e}"))??;
 
-	let mut prefs: Preferences = timeout(std::time::Duration::from_secs(1), async { bincode::deserialize(&out) })
+	let mut prefs: Preferences = timeout(std::time::Duration::from_secs(1), async { deserialize_prefs(&out) })
 		.await
 		.map_err(|e| format!("Failed to deserialize preferences: {e}"))?
 		.map_err(|e| format!("Failed to deserialize bytes into Preferences struct: {e}"))?;
