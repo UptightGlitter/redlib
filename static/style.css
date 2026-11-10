@@ -1022,6 +1022,25 @@ button { cursor: pointer; }
 	margin: 0 auto;
 	background: #000;
 }
+/* Listing cards fill the post column. The post page keeps the cap above. */
+.post:not(.highlighted) .post_media_content { width: 100%; }
+.post:not(.highlighted) .post_media_image { display: block; width: 100%; }
+.post:not(.highlighted) .post_media_image img,
+.post:not(.highlighted) .post_media_image svg {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	height: auto;
+	max-height: none;
+	margin: 0;
+}
+.post:not(.highlighted) .post_media_video {
+	width: 100%;
+	max-width: 100%;
+	height: auto;
+	max-height: none;
+	margin: 0;
+}
 .gallery-card { width: 100%; }
 .gallery-card > a { display: block; width: 100%; }
 .gallery-track {
@@ -3404,19 +3423,16 @@ body.feeds-open .savebar { display: none !important; }
 	color: var(--g-muted);
 	font: var(--md-sys-typescale-body-large);
 }
-@media (max-width: 600px) {
-	#search_sort:not(.search-landing) {
-		flex-direction: column;
-		align-items: stretch;
-		gap: 10px;
-	}
-	#search_sort:not(.search-landing) > .search_widget_divider_box {
+@media (max-width: 899px) {
+	#search_sort,
+	#search_sort > .search_widget_divider_box,
+	#search_sort.search-landing .search_widget_divider_box {
 		flex-direction: column;
 		align-items: stretch;
 		width: 100%;
 		gap: 10px;
 	}
-	#search_sort:not(.search-landing) #search {
+	#search_sort #search {
 		flex: none;
 		width: 100%;
 		min-width: 0;
@@ -3428,13 +3444,13 @@ body.feeds-open .savebar { display: none !important; }
 		background: rgba(var(--g-tt), .08);
 		color: var(--g-text);
 	}
-	#search_sort:not(.search-landing) #inside {
+	#search_sort #inside {
 		max-width: 100%;
-		width: auto;
-		align-self: flex-start;
+		width: 100%;
+		align-self: stretch;
 		position: static;
 	}
-	#search_sort:not(.search-landing) .search_label {
+	#search_sort .search_label {
 		max-width: none;
 		height: auto;
 		min-height: 36px;
@@ -3442,36 +3458,43 @@ body.feeds-open .savebar { display: none !important; }
 		overflow: visible;
 		text-overflow: clip;
 	}
-	#search_sort:not(.search-landing) .search-controls {
+	#search_sort .search-controls {
 		display: flex;
 		flex-wrap: nowrap;
 		align-items: center;
-		gap: 6px;
+		justify-content: stretch;
+		gap: 8px;
 		width: 100%;
 		min-width: 0;
 	}
-	#search_sort:not(.search-landing) .search-controls select {
+	#search_sort .search-controls select {
 		flex: 1 1 0;
 		width: auto;
 		min-width: 0;
-		max-width: 100%;
-		height: 44px;
-		min-height: 44px;
-		padding-right: 30px;
+		max-width: none;
+		height: 48px;
+		min-height: 48px;
+		padding-right: 28px;
 		padding-left: 10px;
-		font-size: 14px;
+		font-size: 15px;
 	}
-	#search_sort:not(.search-landing) #sort_submit {
-		flex: 0 0 44px;
-		width: 44px;
-		height: 44px;
-		min-width: 44px;
-		min-height: 44px;
+	#search_sort #sort_submit {
+		flex: 0 0 52px;
+		width: 52px;
+		height: 48px;
+		min-width: 52px;
+		min-height: 48px;
+		max-width: 52px;
 	}
 }
 #search_sort #sort_submit {
 	display: grid;
 	place-items: center;
+	box-sizing: border-box;
+	width: 52px;
+	height: 48px;
+	min-width: 52px;
+	min-height: 48px;
 	padding: 0;
 	line-height: 1;
 	border-radius: 14px;
@@ -3494,3 +3517,78 @@ body.feeds-open .savebar { display: none !important; }
 	outline-offset: 2px;
 }
 #recent_searches #clear_recent { margin-top: 12px; }
+
+/* Back-swipe indicator. Position and progress are set from glass.js with transform/opacity. */
+.swipe-back {
+	position: fixed;
+	left: 0;
+	top: 0;
+	z-index: 80;
+	width: 56px;
+	height: 56px;
+	margin: 0;
+	padding: 0;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	pointer-events: none;
+	opacity: 0;
+	color: var(--g-acc2);
+	background: rgba(var(--g-accf), .28);
+	border: 1px solid rgba(var(--g-accf), .55);
+	box-shadow: var(--glass-shadow, 0 8px 24px rgba(0, 0, 0, .28));
+	-webkit-backdrop-filter: blur(16px) saturate(125%);
+	backdrop-filter: blur(16px) saturate(125%);
+	transform: translate3d(-64px, 40vh, 0);
+	will-change: transform, opacity;
+}
+.swipe-back-disc {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	display: grid;
+	place-items: center;
+	transform: scale(calc(0.72 + var(--swipe-p, 0) * 0.28));
+}
+.swipe-back-ring {
+	position: absolute;
+	inset: 4px;
+	border-radius: 50%;
+	background: conic-gradient(var(--g-acc2) calc(var(--swipe-p, 0) * 1turn), transparent 0);
+	-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+	mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+}
+.swipe-back-arrow {
+	position: relative;
+	display: block;
+	width: 22px;
+	height: 22px;
+	margin: 0;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2.4;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.swipe-back.cancel { transition: transform .18s ease, opacity .18s ease; }
+.swipe-back.pulse { animation: swipe-fade .28s ease forwards; }
+.swipe-back.pulse .swipe-back-disc { animation: swipe-pop .28s ease; }
+@keyframes swipe-pop {
+	50% { transform: scale(1.12); }
+	100% { transform: scale(1); }
+}
+@keyframes swipe-fade {
+	to { opacity: 0; }
+}
+.swipe-back.demo {
+	opacity: 1;
+	--swipe-p: 0.6;
+	transform: translate3d(48px, 42vh, 0);
+}
+@media (prefers-reduced-motion: reduce) {
+	.swipe-back-disc { transform: none; }
+	.swipe-back.cancel { transition: opacity .15s linear; }
+	.swipe-back.pulse,
+	.swipe-back.pulse .swipe-back-disc { animation: none; }
+	.swipe-back.pulse { opacity: 0; }
+}

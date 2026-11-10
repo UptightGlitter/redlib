@@ -169,6 +169,17 @@
 		})(galleries[g]);
 	}
 
+	document.addEventListener("play", function (e) {
+		var v = e.target;
+		if (!v || v.tagName !== "VIDEO") return;
+		var all = document.querySelectorAll("video");
+		for (var i = 0; i < all.length; i++) {
+			if (all[i] !== v && !all[i].paused) all[i].pause();
+		}
+	}, true);
+
+	initBackSwipe();
+
 	var sel = document.getElementById("theme");
 	if (!sel) return;
 	var names = ["indigo", "abismo", "grafite", "floresta", "aurora", "dark", "light", "dracula", "system", "black", "nord"];
@@ -178,3 +189,121 @@
 		if (sel.value && sel.value !== "system") document.body.classList.add(sel.value);
 	});
 })();
+
+/* Edge back-swipe for the installed app (no browser back button in fullscreen).
+   Threshold is the smaller of 80px and 30% of the viewport: a 390px phone triggers
+   at 80px, and a narrower window never asks for a drag longer than a short thumb move. */
+function initBackSwipe() {
+	if (!window.matchMedia) return;
+	var coarse = window.matchMedia("(pointer: coarse)");
+	var narrow = window.matchMedia("(max-width: 899px)");
+	var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+	function enabled() { return coarse.matches || narrow.matches; }
+	function threshold() { return Math.min(80, window.innerWidth * 0.3); }
+
+	var el = document.createElement("div");
+	el.className = "swipe-back";
+	el.setAttribute("aria-hidden", "true");
+	el.innerHTML = '<div class="swipe-back-disc"><span class="swipe-back-ring"></span><svg class="swipe-back-arrow" viewBox="0 0 24 24"><path d="M14 6 8 12l6 6"/></svg></div>';
+	document.body.appendChild(el);
+	var disc = el.querySelector(".swipe-back-disc");
+
+	var active = null;
+	var raf = 0;
+	var state = { x: -64, y: 0, p: 0 };
+
+	function paint() {
+		raf = 0;
+		el.style.transform = "translate3d(" + state.x + "px," + state.y + "px,0)";
+		el.style.opacity = state.p <= 0 ? "0" : String(Math.min(1, 0.4 + state.p * 0.6));
+		el.style.setProperty("--swipe-p", String(state.p));
+		if (!reduce.matches) disc.style.transform = "scale(" + (0.72 + state.p * 0.28) + ")";
+	}
+	function schedule() {
+		if (!raf) raf = requestAnimationFrame(paint);
+	}
+	function blocked(start) {
+		var node = start && start.nodeType === 1 ? start : start && start.parentElement;
+		while (node && node !== document.documentElement) {
+			if (node.classList && (node.classList.contains("gallery-track") || node.classList.contains("gallery-card") || node.classList.contains("gallery-slide"))) return true;
+			var tag = node.tagName;
+			if (tag === "PRE" || tag === "CODE" || tag === "TEXTAREA" || tag === "INPUT" || tag === "SELECT") return true;
+			if (node.id === "sort_options" || node.id === "listing_options") return true;
+			var ox = window.getComputedStyle(node).overflowX;
+			if ((ox === "auto" || ox === "scroll" || ox === "overlay") && node.scrollWidth > node.clientWidth + 1) return true;
+			node = node.parentElement;
+		}
+		return false;
+	}
+	function goBack() {
+		if (window.history.length > 1) window.history.back();
+		else window.location.href = "/";
+	}
+
+	document.addEventListener("touchstart", function (e) {
+		if (!enabled() || !e.touches || e.touches.length !== 1) return;
+		var t = e.touches[0];
+		if (t.clientX > 30) return;
+		if (blocked(e.target)) return;
+		active = { id: t.identifier, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, decided: false, aborted: false };
+		el.classList.remove("cancel", "pulse", "demo");
+		state.y = t.clientY - 28;
+		state.p = 0;
+		state.x = 0;
+		schedule();
+	}, { passive: true });
+
+	document.addEventListener("touchmove", function (e) {
+		if (!active || !e.touches) return;
+		var t = null;
+		for (var i = 0; i < e.touches.length; i++) if (e.touches[i].identifier === active.id) t = e.touches[i];
+		if (!t) return;
+		var dx = t.clientX - active.x0;
+		var dy = t.clientY - active.y0;
+		if (!active.decided && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+			active.decided = true;
+			if (Math.abs(dy) > Math.abs(dx)) {
+				active.aborted = true;
+				state.p = 0;
+				state.x = -64;
+				schedule();
+				return;
+			}
+		}
+		if (active.aborted || dx <= 0) return;
+		var limit = threshold();
+		var travel = Math.min(dx, limit);
+		state.p = Math.min(1, dx / limit);
+		state.x = travel * 0.9;
+		state.y = t.clientY - 28;
+		active.dx = dx;
+		schedule();
+	}, { passive: true });
+
+	function finish(e) {
+		if (!active) return;
+		var aborted = active.aborted;
+		var dx = active.dx;
+		var limit = threshold();
+		var trigger = !aborted && dx >= limit;
+		active = null;
+		if (!trigger) {
+			el.classList.add("cancel");
+			state.p = 0;
+			state.x = -64;
+			schedule();
+			return;
+		}
+		state.p = 1;
+		schedule();
+		el.classList.add("pulse");
+		goBack();
+	}
+	document.addEventListener("touchend", finish, { passive: true });
+	document.addEventListener("touchcancel", function () {
+		if (!active) return;
+		active.aborted = true;
+		active.dx = 0;
+		finish();
+	}, { passive: true });
+}
