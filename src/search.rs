@@ -66,7 +66,29 @@ pub async fn find(req: Request<Body>) -> Result<Response<Body>, String> {
 	query = REDDIT_URL_MATCH.replace(&query, "").to_string();
 
 	if query.is_empty() {
-		return Ok(redirect("/"));
+		// Land on the search form instead of bouncing home, so the bottom-nav Search link has a page.
+		let sub = req.param("sub").unwrap_or_default();
+		let url = String::from(req.uri().path_and_query().map_or("", |val| val.as_str()));
+		return Ok(template(&SearchTemplate {
+			posts: Vec::new(),
+			subreddits: Vec::new(),
+			sub,
+			params: SearchParams {
+				q: String::new(),
+				sort: param(&path, "sort").unwrap_or_else(|| "relevance".to_string()),
+				t: param(&path, "t").unwrap_or_default(),
+				before: String::new(),
+				after: String::new(),
+				restrict_sr: param(&path, "restrict_sr").unwrap_or_default(),
+				typed: param(&path, "type").unwrap_or_default(),
+			},
+			prefs: Preferences::new(&req),
+			url,
+			is_filtered: false,
+			all_posts_filtered: false,
+			all_posts_hidden_nsfw: false,
+			no_posts: true,
+		}));
 	}
 
 	if query.starts_with("r/") || query.starts_with("user/") {

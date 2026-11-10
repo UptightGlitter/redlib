@@ -43,6 +43,7 @@
 	{% endif %}
 {% endblock %}
 
+{% block tab_search %}/r/{{ post.community }}/search{% endblock %}
 {% block subscriptions %}
 	{% call utils::sub_list(post.community.as_str()) %}
 {% endblock %}

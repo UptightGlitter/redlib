@@ -26,7 +26,7 @@
 		<!-- PWA Manifest -->
 		<link rel="manifest" type="application/json" href="/manifest.json">
 		<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico"> 
-		<link rel="stylesheet" type="text/css" href="/style.css?v=glass4b">
+		<link rel="stylesheet" type="text/css" href="/style.css?v=glass5">
 		<!-- Video quality -->
 		<div id="video_quality" data-value="{{ prefs.video_quality }}"></div>
 		{% endblock %}
@@ -38,6 +38,7 @@
 		{% if prefs.fixed_navbar == "on" %} fixed_navbar{% endif %}
 		{% if url == "/" || url.starts_with("/?") || url == "/hot" || url.starts_with("/hot?") || url == "/new" || url.starts_with("/new?") || url == "/top" || url.starts_with("/top?") || url == "/rising" || url.starts_with("/rising?") || url == "/controversial" || url.starts_with("/controversial?") || url.starts_with("/r/popular") || url.starts_with("/r/all") || url.starts_with("/user") || url.starts_with("/u/") || url.starts_with("/settings") || url == "/search" || url.starts_with("/search?") %} no-top-search{% endif %}">
 		<!-- NAVIGATION BAR -->
+		<div class="topbar">
 		<div class="chrome">
 		<nav class="
 			{% if prefs.fixed_navbar == "on" %} fixed_navbar{% endif %}">
@@ -65,7 +66,24 @@
 				</a>
 			</div>
 		</nav>
-		{% block subscriptions %}{% endblock %}
+		</div>
+
+		<!-- Mobile primary nav. Feeds lives here, outside any backdrop-filtered bar, so it stays fixed with the tabs. -->
+		<nav class="tabbar" aria-label="Primary">
+			<a class="tab{% if url == "/" || url.starts_with("/?") || url == "/hot" || url.starts_with("/hot?") || url == "/new" || url.starts_with("/new?") || url == "/top" || url.starts_with("/top?") || url == "/rising" || url.starts_with("/rising?") || url == "/controversial" || url.starts_with("/controversial?") %} on{% endif %}" href="/">
+				<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+				<span>Home</span>
+			</a>
+			<a class="tab{% if url.contains("/search") %} on{% endif %}" href="{% block tab_search %}/search{% endblock %}">
+				<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+				<span>Search</span>
+			</a>
+			<div class="tab tab-feeds">{% block subscriptions %}{% endblock %}</div>
+			<a class="tab{% if url.starts_with("/settings") %} on{% endif %}" href="/settings">
+				<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+				<span>Settings</span>
+			</a>
+		</nav>
 		</div>
 		
 		<!-- MAIN CONTENT -->
@@ -76,30 +94,6 @@
 		</main>
 		{% endblock %}
 
-		<!-- Mobile primary nav. Feeds reuses details#feeds from the top bar. -->
-		<nav class="tabbar" aria-label="Primary">
-			<a class="tab{% if url == "/" || url.starts_with("/?") || url == "/hot" || url.starts_with("/hot?") || url == "/new" || url.starts_with("/new?") || url == "/top" || url.starts_with("/top?") || url == "/rising" || url.starts_with("/rising?") || url == "/controversial" || url.starts_with("/controversial?") %} on{% endif %}" href="/">
-				<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
-				<span>Home</span>
-			</a>
-			<a class="tab{% if url.contains("/search") %} on{% endif %}" href="/search">
-				<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
-				<span>Search</span>
-			</a>
-			<span class="tab tab-feeds" aria-hidden="true"></span>
-			<a class="tab{% if url.starts_with("/settings") %} on{% endif %}" href="/settings">
-				<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-				<span>Settings</span>
-			</a>
-		</nav>
-
-		<!-- FOOTER -->
-		{% block footer %}
-			<footer>
-				<div class="footer-buttons">
-					<p><span id="version">v{{ env!("CARGO_PKG_VERSION") }}</span><a href="/info" title="View instance information"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>View instance info</a><a href="https://github.com/redlib-org/redlib" title="View code on GitHub"><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>Code</a></p>
-				</div>
-			</footer>
-		{% endblock %}
+		<script src="/glass.js"></script>
 	</body>
 </html>

@@ -36,7 +36,7 @@
 
 {% macro sub_list(current) -%}
 	<details id="feeds">
-		<summary><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>Feeds<svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+		<summary><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg><span class="feed-label">Feeds</span><svg class="i sm" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
 		<div id="feed_list">
 			<p>MAIN FEEDS</p>
 			<a href="/">Home</a>
@@ -284,6 +284,25 @@
 	</div>
 	{% call render_hls_notification(format!("{}%23{}", &self.url[1..].replace("&", "%26").replace("+", "%2B"), post.id)) %}
 	{% endif %}
+	{% else if post.post_type == "gallery" && post.gallery.len() > 0 %}
+	<div class="post_media_content gallery-card">
+		<a href="{{ post.permalink }}">
+			{% for image in post.gallery %}
+				{% if loop.first %}
+				<img loading="lazy" alt="Gallery image" src="{{ image.url }}"/>
+				{% endif %}
+			{% endfor %}
+		</a>
+		<span class="gallery-count">1/{{ post.gallery.len() }}</span>
+	</div>
+	{% else if post.post_type == "gallery" %}
+	<div class="post_media_content gallery-card gallery-fallback">
+		<a href="{{ post.permalink }}">
+			{% if !post.thumbnail.url.is_empty() %}
+			<img loading="lazy" alt="Gallery image" src="{{ post.thumbnail.url }}"/>
+			{% endif %}
+		</a>
+	</div>
 	{% else if post.post_type != "self" %}
 	<a class="post_thumbnail{% if post.thumbnail.url.is_empty() %} no_thumbnail{% endif %}" href="{% if post.post_type == "link" %}{{ post.media.url }}{% else %}{{ post.permalink }}{% endif %}" rel="nofollow">
 		{% if post.thumbnail.url.is_empty() %}

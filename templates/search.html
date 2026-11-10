@@ -7,15 +7,17 @@
 	{% call utils::sub_list("") %}
 {% endblock %}
 
+{% block tab_search %}{% if sub != "" %}/r/{{ sub }}/search{% else %}/search{% endif %}{% endblock %}
+
 {% block content %}
 	<div id="column_one">
-		<form id="search_sort">
+		<form id="search_sort" class="{% if params.q == "" %}search-landing{% endif %}">
 			<div class="search_widget_divider_box">
-				<input id="search" type="text" name="q" placeholder="Search" value="{{ params.q|safe }}" title="Search redlib">
+				<input id="search" type="text" name="q" placeholder="Search" value="{{ params.q|safe }}" title="Search redlib" {% if params.q == "" %}autofocus{% endif %}>
 				<div class="search_widget_divider_box">
 					{% if sub != "" %}
 					<div id="inside">
-						<input type="checkbox" name="restrict_sr" id="restrict_sr" {% if params.restrict_sr != "" %}checked{% endif %}>
+						<input type="checkbox" name="restrict_sr" id="restrict_sr" {% if params.restrict_sr != "" || sub != "" %}checked{% endif %}>
 						<label for="restrict_sr" class="search_label">in r/{{ sub }}</label>
 					</div>
 					{% endif %}
@@ -70,7 +72,7 @@
 		<span class="listing_warn">All posts are hidden because they are NSFW. Enable "Show NSFW posts" in settings to view.</span>
 		{% endif %}
 
-		{% if no_posts %}
+		{% if no_posts && params.q != "" %}
 			<center>No posts were found.</center>
 		{% endif %}
 
