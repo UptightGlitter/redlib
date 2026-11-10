@@ -1,0 +1,34 @@
+/* Grafite — dark glass theme. */
+html:has(> body.grafite),
+body.grafite {
+	color-scheme: dark;
+	--g-bg: #0d0f13;
+	--g-b1: 70, 82, 110;
+	--g-b2: 50, 70, 95;
+	--g-b3: 80, 80, 95;
+	--g-tt: 190, 195, 210;
+	--g-tb: 34, 38, 48;
+	--g-line: 210, 215, 230;
+	--g-text: #eceef2;
+	--g-muted: #c2c6d0;
+	--g-acc: #93c5fd;
+	--g-acc2: #bfdbfe;
+	--g-accf: 96, 165, 250;
+	--g-r1: #93c5fd;
+	--g-r2: #a5b4fc;
+	--g-r3: #9ca3af;
+	--g-fb: #1a1d24;
+	--md-sys-color-primary: var(--g-acc2);
+	--md-sys-color-on-surface: var(--g-text);
+	--md-sys-color-surface: var(--g-bg);
+	--md-sys-color-background: var(--g-bg);
+	--md-sys-color-on-surface-variant: var(--g-muted);
+	--md-sys-color-surface-container: var(--g-fb);
+	--md-sys-color-surface-container-low: var(--g-fb);
+	--md-sys-color-surface-container-high: var(--g-fb);
+	--md-sys-color-surface-container-highest: var(--g-fb);
+	--accent: var(--g-acc);
+	--text: var(--g-text);
+	--background: var(--g-bg);
+	--upvote: var(--g-acc);
+}

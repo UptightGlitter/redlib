@@ -1,0 +1,34 @@
+/* Abismo — dark glass theme. */
+html:has(> body.abismo),
+body.abismo {
+	color-scheme: dark;
+	--g-bg: #061417;
+	--g-b1: 15, 110, 115;
+	--g-b2: 30, 70, 130;
+	--g-b3: 10, 80, 90;
+	--g-tt: 150, 210, 210;
+	--g-tb: 16, 48, 54;
+	--g-line: 170, 230, 230;
+	--g-text: #e6f4f2;
+	--g-muted: #b7d3cf;
+	--g-acc: #5eead4;
+	--g-acc2: #99f6e4;
+	--g-accf: 45, 212, 191;
+	--g-r1: #5eead4;
+	--g-r2: #7dd3fc;
+	--g-r3: #94a3b8;
+	--g-fb: #0d2427;
+	--md-sys-color-primary: var(--g-acc2);
+	--md-sys-color-on-surface: var(--g-text);
+	--md-sys-color-surface: var(--g-bg);
+	--md-sys-color-background: var(--g-bg);
+	--md-sys-color-on-surface-variant: var(--g-muted);
+	--md-sys-color-surface-container: var(--g-fb);
+	--md-sys-color-surface-container-low: var(--g-fb);
+	--md-sys-color-surface-container-high: var(--g-fb);
+	--md-sys-color-surface-container-highest: var(--g-fb);
+	--accent: var(--g-acc);
+	--text: var(--g-text);
+	--background: var(--g-bg);
+	--upvote: var(--g-acc);
+}

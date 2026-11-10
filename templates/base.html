@@ -7,7 +7,7 @@
 		<title>{% block title %}Redlib{% endblock %}</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<meta name="description" content="View on Redlib, an alternative private front-end to Reddit.">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 		{% if crate::utils::disable_indexing() %}
 		<meta name="robots" content="noindex, nofollow">
 		{% endif %}
@@ -26,7 +26,7 @@
 		<!-- PWA Manifest -->
 		<link rel="manifest" type="application/json" href="/manifest.json">
 		<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico"> 
-		<link rel="stylesheet" type="text/css" href="/style.css?v=glass3">
+		<link rel="stylesheet" type="text/css" href="/style.css?v=glass4b">
 		<!-- Video quality -->
 		<div id="video_quality" data-value="{{ prefs.video_quality }}"></div>
 		{% endblock %}
@@ -35,13 +35,14 @@
 		{% if prefs.layout != "" %}{{ prefs.layout }}{% endif %}
 		{% if prefs.wide == "on" %} wide{% endif %}
 		{% if prefs.theme != "system" %} {{ prefs.theme }}{% endif %}
-		{% if prefs.fixed_navbar == "on" %} fixed_navbar{% endif %}">
+		{% if prefs.fixed_navbar == "on" %} fixed_navbar{% endif %}
+		{% if url == "/" || url.starts_with("/?") || url == "/hot" || url.starts_with("/hot?") || url == "/new" || url.starts_with("/new?") || url == "/top" || url.starts_with("/top?") || url == "/rising" || url.starts_with("/rising?") || url == "/controversial" || url.starts_with("/controversial?") || url.starts_with("/r/popular") || url.starts_with("/r/all") || url.starts_with("/user") || url.starts_with("/u/") || url.starts_with("/settings") || url == "/search" || url.starts_with("/search?") %} no-top-search{% endif %}">
 		<!-- NAVIGATION BAR -->
+		<div class="chrome">
 		<nav class="
 			{% if prefs.fixed_navbar == "on" %} fixed_navbar{% endif %}">
 			<div id="logo">
 				<a id="redlib" href="/"><span class="mark" aria-hidden="true">r</span><span class="word"><span id="red">red</span><span id="lib">lib.</span></span></a>
-				{% block subscriptions %}{% endblock %}
 			</div>
 			{% block search %}{% endblock %}
 			<div id="links">
@@ -64,6 +65,8 @@
 				</a>
 			</div>
 		</nav>
+		{% block subscriptions %}{% endblock %}
+		</div>
 		
 		<!-- MAIN CONTENT -->
 		{% block body %}
@@ -72,6 +75,23 @@
 			{% endblock %}
 		</main>
 		{% endblock %}
+
+		<!-- Mobile primary nav. Feeds reuses details#feeds from the top bar. -->
+		<nav class="tabbar" aria-label="Primary">
+			<a class="tab{% if url == "/" || url.starts_with("/?") || url == "/hot" || url.starts_with("/hot?") || url == "/new" || url.starts_with("/new?") || url == "/top" || url.starts_with("/top?") || url == "/rising" || url.starts_with("/rising?") || url == "/controversial" || url.starts_with("/controversial?") %} on{% endif %}" href="/">
+				<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+				<span>Home</span>
+			</a>
+			<a class="tab{% if url.contains("/search") %} on{% endif %}" href="/search">
+				<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+				<span>Search</span>
+			</a>
+			<span class="tab tab-feeds" aria-hidden="true"></span>
+			<a class="tab{% if url.starts_with("/settings") %} on{% endif %}" href="/settings">
+				<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+				<span>Settings</span>
+			</a>
+		</nav>
 
 		<!-- FOOTER -->
 		{% block footer %}

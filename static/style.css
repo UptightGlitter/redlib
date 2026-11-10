@@ -7,6 +7,83 @@
 :root {
 	color-scheme: dark;
 
+	/* Índigo is the default glass theme. Other glass themes override these. */
+	--g-bg: #0a0d1f;
+	--g-b1: 88, 70, 170;
+	--g-b2: 50, 80, 170;
+	--g-b3: 70, 50, 140;
+	--g-tt: 150, 165, 210;
+	--g-tb: 40, 48, 80;
+	--g-line: 190, 200, 240;
+	--g-text: #e8eaf4;
+	--g-muted: #c3c8de;
+	--g-acc: #a78bfa;
+	--g-acc2: #c4b5fd;
+	--g-accf: 139, 108, 240;
+	--g-r1: #a78bfa;
+	--g-r2: #7dd3fc;
+	--g-r3: #94a3b8;
+	--g-fb: #161b32;
+	--glass-page: var(--g-bg);
+	--glass-page-image:
+		radial-gradient(55% 32% at 12% 6%, rgba(var(--g-b1), .55), transparent 70%),
+		radial-gradient(50% 32% at 98% 38%, rgba(var(--g-b2), .45), transparent 70%),
+		radial-gradient(55% 32% at 6% 78%, rgba(var(--g-b3), .42), transparent 70%),
+		radial-gradient(45% 28% at 88% 100%, rgba(var(--g-b1), .35), transparent 70%);
+	--glass-text: var(--g-text);
+	--glass-muted: var(--g-muted);
+	--glass-surface: linear-gradient(180deg, rgba(var(--g-tt), .12), rgba(var(--g-tb), .55));
+	--glass-surface-hover: linear-gradient(180deg, rgba(var(--g-tt), .18), rgba(var(--g-tb), .62));
+	--glass-comment: var(--glass-surface);
+	--glass-blur: blur(20px) saturate(125%);
+	--glass-border: 1px solid rgba(var(--g-line), .13);
+	--glass-border-top: rgba(var(--g-line), .22);
+	--glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 10px 28px rgba(0, 0, 0, .32);
+	--glass-inset: var(--glass-shadow);
+	--glass-nav-margin: 8px 10px 0;
+	--glass-nav-radius: 22px;
+	--glass-nav-top: 8px;
+	--glass-footer-margin: 0 10px 10px;
+	--glass-footer-width: auto;
+	--glass-footer-radius: 24px;
+	--glass-footer-border-top: 1px solid rgba(var(--g-line), .22);
+	--glass-card-radius: 22px;
+	--glass-comment-radius: 18px;
+	--glass-nested: rgba(var(--g-tt), .07);
+	--glass-nested-border: 1px solid rgba(var(--g-line), .10);
+	--glass-nested-radius: 14px;
+	--glass-chip: rgba(var(--g-tt), .08);
+	--glass-chip-border: rgba(var(--g-line), .15);
+	--glass-chip-border-w: 1px;
+	--glass-chip-text: var(--g-text);
+	--glass-chip-blur: blur(12px);
+	--glass-chip-radius: 999px;
+	--glass-flair-bg: rgba(var(--g-tt), .10);
+	--glass-flair-fg: var(--g-text);
+	--glass-flair-border: 1px solid rgba(var(--g-line), .22);
+	--glass-active: rgba(var(--g-accf), .24);
+	--glass-active-border: rgba(var(--g-accf), .55);
+	--glass-active-text: #fff;
+	--glass-nav-active: rgba(var(--g-accf), .24);
+	--glass-accent: var(--g-acc2);
+	--glass-arrow: var(--g-acc);
+	--glass-focus: var(--g-acc);
+	--glass-search-bg: rgba(var(--g-tt), .08);
+	--glass-search-border: 1px solid rgba(var(--g-line), .14);
+	--glass-act: rgba(var(--g-tt), .08);
+	--glass-act-border: rgba(var(--g-line), .12);
+	--glass-act-text: var(--g-text);
+	--glass-logo: none;
+	--glass-nav-wrap: nowrap;
+	--glass-search-order: 1;
+	--glass-search-basis: 0px;
+	--glass-search-width: auto;
+	--glass-search-max: none;
+	--comment-rail-1: var(--g-r1);
+	--comment-rail-2: var(--g-r2);
+	--comment-rail-3: var(--g-r3);
+	--comment-rail-4: var(--g-acc2);
+
 	/* Sober glass palette: navy / indigo, light lavender links, violet only as an accent. */
 	--md-sys-color-primary: #c5cbe6;
 	--md-sys-color-on-primary: #1c2140;
@@ -90,63 +167,6 @@
 	--spoiler: var(--md-sys-color-on-surface-variant);
 }
 
-/* System theme follows the OS. Light maps the Light theme's colors (see themes/light.css). */
-@media (prefers-color-scheme: light) {
-	:root {
-		color-scheme: light;
-		--accent: #bb2b3b;
-		--green: #00a229;
-		--text: black;
-		--foreground: #f5f5f5;
-		--background: #ddd;
-		--outside: #ececec;
-		--post: #eee;
-		--panel-border: 1px solid #ccc;
-		--highlighted: white;
-		--visited: #555;
-		--shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-		--nsfw: #ff5c5d;
-		--admin: #ea0027;
-		--mod-green: var(--green);
-		--upvote: var(--accent);
-		--spoiler: #3c3836;
-		--md-sys-color-primary: var(--accent);
-		--md-sys-color-on-primary: var(--foreground);
-		--md-sys-color-primary-container: var(--accent);
-		--md-sys-color-on-primary-container: var(--foreground);
-		--md-sys-color-secondary: var(--text);
-		--md-sys-color-on-secondary: var(--background);
-		--md-sys-color-secondary-container: var(--accent);
-		--md-sys-color-on-secondary-container: var(--foreground);
-		--md-sys-color-tertiary: var(--green);
-		--md-sys-color-on-tertiary: var(--background);
-		--md-sys-color-tertiary-container: var(--highlighted);
-		--md-sys-color-on-tertiary-container: var(--text);
-		--md-sys-color-error: var(--accent);
-		--md-sys-color-on-error: var(--foreground);
-		--md-sys-color-error-container: var(--accent);
-		--md-sys-color-on-error-container: var(--foreground);
-		--md-sys-color-surface: var(--background);
-		--md-sys-color-on-surface: var(--text);
-		--md-sys-color-surface-variant: var(--highlighted);
-		--md-sys-color-on-surface-variant: color-mix(in srgb, var(--text) 84%, var(--background));
-		--md-sys-color-surface-dim: var(--background);
-		--md-sys-color-surface-bright: var(--highlighted);
-		--md-sys-color-surface-container-lowest: var(--background);
-		--md-sys-color-surface-container-low: var(--post);
-		--md-sys-color-surface-container: var(--outside);
-		--md-sys-color-surface-container-high: var(--highlighted);
-		--md-sys-color-surface-container-highest: var(--highlighted);
-		--md-sys-color-outline: color-mix(in srgb, var(--text) 72%, var(--background));
-		--md-sys-color-outline-variant: color-mix(in srgb, var(--text) 64%, var(--background));
-		--md-sys-color-inverse-surface: var(--text);
-		--md-sys-color-inverse-on-surface: var(--background);
-		--md-sys-color-inverse-primary: var(--accent);
-		--md-sys-color-background: var(--background);
-		--md-sys-color-on-background: var(--text);
-	}
-}
-
 * { box-sizing: border-box; }
 
 html { background: var(--md-sys-color-surface); }
@@ -179,6 +199,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 	border-radius: 4px;
 }
 
+a, button, select, input, summary, .post_score, .tabbar .tab {
+	transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+}
 a { color: var(--md-sys-color-primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
@@ -701,17 +724,17 @@ button { cursor: pointer; }
 .post {
 	position: relative;
 	display: grid;
-	grid-template-columns: 56px minmax(0, 1fr) auto;
+	grid-template-columns: minmax(0, 1fr);
 	grid-template-areas:
-		"score header thumb"
-		"score title  thumb"
-		"score media  media"
-		"score body   body"
-		"score poll   poll"
-		"score notice notice"
-		"score footer footer";
+		"header"
+		"title"
+		"media"
+		"body"
+		"poll"
+		"notice"
+		"footer";
 	column-gap: 12px;
-	padding: 16px 16px 12px 8px;
+	padding: 16px 16px 12px;
 	background: var(--md-sys-color-surface-container-low);
 	border-radius: var(--md-sys-shape-corner-large);
 	box-shadow: var(--md-sys-elevation-level1);
@@ -865,25 +888,31 @@ button { cursor: pointer; }
 }
 
 .post_score {
-	grid-area: score;
-	align-self: start;
-	display: flex;
-	flex-direction: column;
+	grid-area: auto;
+	align-self: center;
+	display: inline-flex;
+	flex-direction: row;
 	align-items: center;
-	gap: 2px;
-	padding: 2px 0 0;
+	gap: 4px;
+	height: 32px;
+	padding: 0 12px 0 10px;
 	margin: 0;
 	font: var(--md-sys-typescale-label-large);
+	font-weight: 600;
 	color: var(--md-sys-color-on-surface);
 	text-align: center;
-	background: none;
-	border-radius: 0;
+	background: var(--glass-chip, var(--md-sys-color-surface-container-highest));
+	border: 1px solid var(--glass-chip-border, transparent);
+	border-radius: 999px;
+	white-space: nowrap;
+	flex: 0 0 auto;
 }
 .post_score::before {
 	content: "";
-	width: 20px;
-	height: 20px;
-	background: var(--md-sys-color-primary);
+	width: 12px;
+	height: 12px;
+	flex: none;
+	background: var(--glass-arrow, var(--md-sys-color-primary));
 	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 4 5 12h4v8h6v-8h4z'/%3E%3C/svg%3E") center/contain no-repeat;
 	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='black' d='M12 4 5 12h4v8h6v-8h4z'/%3E%3C/svg%3E") center/contain no-repeat;
 }
@@ -898,14 +927,15 @@ button { cursor: pointer; }
 .post.highlighted .post_score {
 	flex-direction: row;
 	gap: 4px;
-	padding: 0;
+	padding: 0 12px 0 10px;
 	grid-area: auto;
 }
 
 .post_thumbnail {
-	grid-area: thumb;
-	width: 128px;
-	margin: 0 0 0 8px;
+	grid-area: media;
+	width: 100%;
+	max-width: 100%;
+	margin: 8px 0 0;
 	align-self: start;
 	border-radius: var(--md-sys-shape-corner-medium);
 	overflow: hidden;
@@ -968,6 +998,8 @@ button { cursor: pointer; }
 	overflow: hidden;
 	position: relative;
 	background: var(--md-sys-color-surface-container-lowest);
+	margin-left: auto;
+	margin-right: auto;
 }
 .post_media_image svg,
 .post_media_image img,
@@ -2236,20 +2268,23 @@ body > footer {
 @media (max-width: 600px) {
 	nav {
 		height: auto;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		gap: 8px;
-		padding: 8px 8px 10px 12px;
-		width: 100%;
+		padding: 8px 8px 8px 12px;
+		width: auto;
+		max-width: 100%;
+		min-width: 0;
+		align-self: stretch;
 	}
-	#logo { order: 1; }
-	#links { order: 2; margin-left: auto; }
-	#searchbox { order: 3; flex-basis: 100%; max-width: none; height: 44px; width: 100%; margin: 0; }
+	#logo { order: 1; min-width: 0; }
+	#links { order: 2; margin-left: 0; flex: 0 0 auto; min-width: 0; }
+	#searchbox { order: 1; flex: 1 1 0; flex-basis: 0; max-width: 100%; min-width: 0; height: 44px; width: auto; margin: 0; }
 	#links a span { display: none; }
 	#links a { padding: 0; width: 40px; justify-content: center; }
 	#redlib .word { display: none; }
-	.post { grid-template-columns: 44px minmax(0, 1fr) auto; padding: 12px 12px 10px 4px; column-gap: 8px; }
-	.post_thumbnail { width: 88px; }
-	.post_thumbnail div, .post_thumbnail > svg { height: 64px; }
+	.post { grid-template-columns: minmax(0, 1fr); padding: 12px 12px 10px; column-gap: 8px; }
+	.post_thumbnail { width: 100%; max-width: 100%; align-items: center; }
+	.post_thumbnail div, .post_thumbnail > svg { height: auto; max-height: 360px; max-width: 100%; }
 	.post_footer .ratio { display: none; }
 	#column_one > form#sort { flex-wrap: wrap; overflow: visible; max-width: 100%; min-width: 0; }
 	#column_one > form#sort .field { width: auto; min-width: 148px; }
@@ -2336,61 +2371,65 @@ body > footer {
 	.mobile_item { display: none; }
 }
 
-/* ---------- Sober glass (dark theme and default dark only) ----------
-   Light and every other named theme leave these variables unset, so the
-   fallbacks below keep their existing surfaces. No orbs. */
+/* ---------- Glass themes ----------
+   Índigo is the default (:root). Named glass themes override --g-* in
+   static/themes/*.css. Other themes leave --glass-* unset. */
 
-html:has(> body.dark) {
-	--glass-page: #0a0d1f;
+html:has(> body.dark),
+html:has(> body.indigo),
+html:has(> body.abismo),
+html:has(> body.grafite),
+html:has(> body.floresta),
+html:has(> body.aurora) {
+	--glass-page: var(--g-bg);
 	--glass-page-image:
-		radial-gradient(60% 35% at 15% 8%, rgba(88, 70, 170, .38), transparent 70%),
-		radial-gradient(55% 35% at 95% 40%, rgba(50, 80, 170, .32), transparent 70%),
-		radial-gradient(60% 35% at 10% 80%, rgba(70, 50, 140, .30), transparent 70%),
-		radial-gradient(50% 30% at 85% 98%, rgba(40, 70, 150, .28), transparent 70%),
-		linear-gradient(180deg, #0d1128 0%, #0a0d1f 100%);
-	--glass-text: #e8eaf4;
-	--glass-muted: rgba(205, 210, 230, .78);
-	--glass-surface: linear-gradient(180deg, rgba(150, 165, 210, .12), rgba(40, 48, 80, .38));
-	--glass-surface-hover: linear-gradient(180deg, rgba(150, 165, 210, .18), rgba(40, 48, 80, .46));
+		radial-gradient(55% 32% at 12% 6%, rgba(var(--g-b1), .55), transparent 70%),
+		radial-gradient(50% 32% at 98% 38%, rgba(var(--g-b2), .45), transparent 70%),
+		radial-gradient(55% 32% at 6% 78%, rgba(var(--g-b3), .42), transparent 70%),
+		radial-gradient(45% 28% at 88% 100%, rgba(var(--g-b1), .35), transparent 70%);
+	--glass-text: var(--g-text);
+	--glass-muted: var(--g-muted);
+	--glass-surface: linear-gradient(180deg, rgba(var(--g-tt), .12), rgba(var(--g-tb), .55));
+	--glass-surface-hover: linear-gradient(180deg, rgba(var(--g-tt), .18), rgba(var(--g-tb), .62));
 	--glass-comment: var(--glass-surface);
-	--glass-blur: blur(20px) saturate(120%);
-	--glass-border: 1px solid rgba(190, 200, 240, .12);
-	--glass-border-top: rgba(200, 210, 250, .18);
-	--glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 8px 24px rgba(0, 0, 0, .35);
+	--glass-blur: blur(20px) saturate(125%);
+	--glass-border: 1px solid rgba(var(--g-line), .13);
+	--glass-border-top: rgba(var(--g-line), .22);
+	--glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 10px 28px rgba(0, 0, 0, .32);
 	--glass-inset: var(--glass-shadow);
 	--glass-nav-margin: 8px 10px 0;
-	--glass-nav-radius: 20px;
+	--glass-nav-radius: 22px;
 	--glass-nav-top: 8px;
 	--glass-footer-margin: 0 10px 10px;
 	--glass-footer-width: auto;
 	--glass-footer-radius: 24px;
-	--glass-footer-border-top: 1px solid rgba(200, 210, 250, .18);
-	--glass-card-radius: 20px;
-	--glass-comment-radius: 16px;
-	--glass-nested: rgba(160, 170, 210, .08);
-	--glass-nested-border: 1px solid rgba(190, 200, 240, .10);
-	--glass-nested-radius: 12px;
-	--glass-chip: rgba(160, 170, 210, .08);
-	--glass-chip-border: rgba(190, 200, 240, .14);
+	--glass-footer-border-top: 1px solid rgba(var(--g-line), .22);
+	--glass-card-radius: 22px;
+	--glass-comment-radius: 18px;
+	--glass-nested: rgba(var(--g-tt), .07);
+	--glass-nested-border: 1px solid rgba(var(--g-line), .10);
+	--glass-nested-radius: 14px;
+	--glass-chip: rgba(var(--g-tt), .08);
+	--glass-chip-border: rgba(var(--g-line), .15);
 	--glass-chip-border-w: 1px;
-	--glass-chip-text: rgba(220, 224, 240, .85);
+	--glass-chip-text: var(--g-text);
 	--glass-chip-blur: blur(12px);
 	--glass-chip-radius: 999px;
-	--glass-flair-bg: rgba(160, 170, 210, .10);
-	--glass-flair-fg: #d6dbf0;
-	--glass-flair-border: 1px solid rgba(190, 200, 240, .22);
-	--glass-active: rgba(139, 108, 240, .26);
-	--glass-active-border: rgba(167, 139, 250, .45);
+	--glass-flair-bg: rgba(var(--g-tt), .10);
+	--glass-flair-fg: var(--g-text);
+	--glass-flair-border: 1px solid rgba(var(--g-line), .22);
+	--glass-active: rgba(var(--g-accf), .24);
+	--glass-active-border: rgba(var(--g-accf), .55);
 	--glass-active-text: #fff;
-	--glass-nav-active: rgba(139, 108, 240, .22);
-	--glass-accent: #c4b5fd;
-	--glass-arrow: #a78bfa;
-	--glass-focus: #a78bfa;
-	--glass-search-bg: rgba(160, 170, 210, .08);
-	--glass-search-border: 1px solid rgba(190, 200, 240, .12);
-	--glass-act: rgba(160, 170, 210, .07);
-	--glass-act-border: rgba(190, 200, 240, .10);
-	--glass-act-text: rgba(220, 224, 240, .88);
+	--glass-nav-active: rgba(var(--g-accf), .24);
+	--glass-accent: var(--g-acc2);
+	--glass-arrow: var(--g-acc);
+	--glass-focus: var(--g-acc);
+	--glass-search-bg: rgba(var(--g-tt), .08);
+	--glass-search-border: 1px solid rgba(var(--g-line), .14);
+	--glass-act: rgba(var(--g-tt), .08);
+	--glass-act-border: rgba(var(--g-line), .12);
+	--glass-act-text: var(--g-text);
 	--glass-logo: none;
 	--glass-nav-wrap: nowrap;
 	--glass-search-order: 1;
@@ -2398,66 +2437,78 @@ html:has(> body.dark) {
 	--glass-search-width: auto;
 	--glass-search-max: none;
 }
-
-html:has(> body.dark) body {
-	--comment-rail-1: #9eb4f0;
-	--comment-rail-2: #a78bfa;
-	--comment-rail-3: #8aa4c8;
-	--comment-rail-4: #c4b5fd;
+html:has(> body.dark) :focus-visible,
+html:has(> body.indigo) :focus-visible,
+html:has(> body.abismo) :focus-visible,
+html:has(> body.grafite) :focus-visible,
+html:has(> body.floresta) :focus-visible,
+html:has(> body.aurora) :focus-visible {
+	outline: 2px solid var(--g-acc);
+	outline-offset: 2px;
+}
+html:has(> body.dark) body,
+html:has(> body.indigo) body,
+html:has(> body.abismo) body,
+html:has(> body.grafite) body,
+html:has(> body.floresta) body,
+html:has(> body.aurora) body {
+	--comment-rail-1: var(--g-r1);
+	--comment-rail-2: var(--g-r2);
+	--comment-rail-3: var(--g-r3);
+	--comment-rail-4: var(--g-acc2);
 }
 
 @media not (prefers-color-scheme: light) {
-	html:has(> body:not(.black):not(.dark):not(.doomone):not(.dracula):not(.gold):not(.gruvboxdark):not(.gruvboxlight):not(.icebergDark):not(.laserwave):not(.libredditBlack):not(.libredditDark):not(.libredditLight):not(.light):not(.midnightPurple):not(.nord):not(.rosebox):not(.tokyoNight):not(.violet)) {
-		--glass-page: #0a0d1f;
+	html:has(> body:not(.black):not(.dark):not(.doomone):not(.dracula):not(.gold):not(.gruvboxdark):not(.gruvboxlight):not(.icebergDark):not(.laserwave):not(.libredditBlack):not(.libredditDark):not(.libredditLight):not(.light):not(.midnightPurple):not(.nord):not(.rosebox):not(.tokyoNight):not(.violet):not(.indigo):not(.abismo):not(.grafite):not(.floresta):not(.aurora)) {
+		--glass-page: var(--g-bg);
 		--glass-page-image:
-			radial-gradient(60% 35% at 15% 8%, rgba(88, 70, 170, .38), transparent 70%),
-			radial-gradient(55% 35% at 95% 40%, rgba(50, 80, 170, .32), transparent 70%),
-			radial-gradient(60% 35% at 10% 80%, rgba(70, 50, 140, .30), transparent 70%),
-			radial-gradient(50% 30% at 85% 98%, rgba(40, 70, 150, .28), transparent 70%),
-			linear-gradient(180deg, #0d1128 0%, #0a0d1f 100%);
-		--glass-text: #e8eaf4;
-		--glass-muted: rgba(205, 210, 230, .78);
-		--glass-surface: linear-gradient(180deg, rgba(150, 165, 210, .12), rgba(40, 48, 80, .38));
-		--glass-surface-hover: linear-gradient(180deg, rgba(150, 165, 210, .18), rgba(40, 48, 80, .46));
+			radial-gradient(55% 32% at 12% 6%, rgba(var(--g-b1), .55), transparent 70%),
+			radial-gradient(50% 32% at 98% 38%, rgba(var(--g-b2), .45), transparent 70%),
+			radial-gradient(55% 32% at 6% 78%, rgba(var(--g-b3), .42), transparent 70%),
+			radial-gradient(45% 28% at 88% 100%, rgba(var(--g-b1), .35), transparent 70%);
+		--glass-text: var(--g-text);
+		--glass-muted: var(--g-muted);
+		--glass-surface: linear-gradient(180deg, rgba(var(--g-tt), .12), rgba(var(--g-tb), .55));
+		--glass-surface-hover: linear-gradient(180deg, rgba(var(--g-tt), .18), rgba(var(--g-tb), .62));
 		--glass-comment: var(--glass-surface);
-		--glass-blur: blur(20px) saturate(120%);
-		--glass-border: 1px solid rgba(190, 200, 240, .12);
-		--glass-border-top: rgba(200, 210, 250, .18);
-		--glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 8px 24px rgba(0, 0, 0, .35);
+		--glass-blur: blur(20px) saturate(125%);
+		--glass-border: 1px solid rgba(var(--g-line), .13);
+		--glass-border-top: rgba(var(--g-line), .22);
+		--glass-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 10px 28px rgba(0, 0, 0, .32);
 		--glass-inset: var(--glass-shadow);
 		--glass-nav-margin: 8px 10px 0;
-		--glass-nav-radius: 20px;
+		--glass-nav-radius: 22px;
 		--glass-nav-top: 8px;
 		--glass-footer-margin: 0 10px 10px;
 		--glass-footer-width: auto;
 		--glass-footer-radius: 24px;
-		--glass-footer-border-top: 1px solid rgba(200, 210, 250, .18);
-		--glass-card-radius: 20px;
-		--glass-comment-radius: 16px;
-		--glass-nested: rgba(160, 170, 210, .08);
-		--glass-nested-border: 1px solid rgba(190, 200, 240, .10);
-		--glass-nested-radius: 12px;
-		--glass-chip: rgba(160, 170, 210, .08);
-		--glass-chip-border: rgba(190, 200, 240, .14);
+		--glass-footer-border-top: 1px solid rgba(var(--g-line), .22);
+		--glass-card-radius: 22px;
+		--glass-comment-radius: 18px;
+		--glass-nested: rgba(var(--g-tt), .07);
+		--glass-nested-border: 1px solid rgba(var(--g-line), .10);
+		--glass-nested-radius: 14px;
+		--glass-chip: rgba(var(--g-tt), .08);
+		--glass-chip-border: rgba(var(--g-line), .15);
 		--glass-chip-border-w: 1px;
-		--glass-chip-text: rgba(220, 224, 240, .85);
+		--glass-chip-text: var(--g-text);
 		--glass-chip-blur: blur(12px);
 		--glass-chip-radius: 999px;
-		--glass-flair-bg: rgba(160, 170, 210, .10);
-		--glass-flair-fg: #d6dbf0;
-		--glass-flair-border: 1px solid rgba(190, 200, 240, .22);
-		--glass-active: rgba(139, 108, 240, .26);
-		--glass-active-border: rgba(167, 139, 250, .45);
+		--glass-flair-bg: rgba(var(--g-tt), .10);
+		--glass-flair-fg: var(--g-text);
+		--glass-flair-border: 1px solid rgba(var(--g-line), .22);
+		--glass-active: rgba(var(--g-accf), .24);
+		--glass-active-border: rgba(var(--g-accf), .55);
 		--glass-active-text: #fff;
-		--glass-nav-active: rgba(139, 108, 240, .22);
-		--glass-accent: #c4b5fd;
-		--glass-arrow: #a78bfa;
-		--glass-focus: #a78bfa;
-		--glass-search-bg: rgba(160, 170, 210, .08);
-		--glass-search-border: 1px solid rgba(190, 200, 240, .12);
-		--glass-act: rgba(160, 170, 210, .07);
-		--glass-act-border: rgba(190, 200, 240, .10);
-		--glass-act-text: rgba(220, 224, 240, .88);
+		--glass-nav-active: rgba(var(--g-accf), .24);
+		--glass-accent: var(--g-acc2);
+		--glass-arrow: var(--g-acc);
+		--glass-focus: var(--g-acc);
+		--glass-search-bg: rgba(var(--g-tt), .08);
+		--glass-search-border: 1px solid rgba(var(--g-line), .14);
+		--glass-act: rgba(var(--g-tt), .08);
+		--glass-act-border: rgba(var(--g-line), .12);
+		--glass-act-text: var(--g-text);
 		--glass-logo: none;
 		--glass-nav-wrap: nowrap;
 		--glass-search-order: 1;
@@ -2465,41 +2516,48 @@ html:has(> body.dark) body {
 		--glass-search-width: auto;
 		--glass-search-max: none;
 	}
-
-	html:has(> body:not(.black):not(.dark):not(.doomone):not(.dracula):not(.gold):not(.gruvboxdark):not(.gruvboxlight):not(.icebergDark):not(.laserwave):not(.libredditBlack):not(.libredditDark):not(.libredditLight):not(.light):not(.midnightPurple):not(.nord):not(.rosebox):not(.tokyoNight):not(.violet)) body {
-		--comment-rail-1: #9eb4f0;
-		--comment-rail-2: #a78bfa;
-		--comment-rail-3: #8aa4c8;
-		--comment-rail-4: #c4b5fd;
+	html:has(> body:not(.black):not(.dark):not(.doomone):not(.dracula):not(.gold):not(.gruvboxdark):not(.gruvboxlight):not(.icebergDark):not(.laserwave):not(.libredditBlack):not(.libredditDark):not(.libredditLight):not(.light):not(.midnightPurple):not(.nord):not(.rosebox):not(.tokyoNight):not(.violet):not(.indigo):not(.abismo):not(.grafite):not(.floresta):not(.aurora)) body {
+		--comment-rail-1: var(--g-r1);
+		--comment-rail-2: var(--g-r2);
+		--comment-rail-3: var(--g-r3);
+		--comment-rail-4: var(--g-acc2);
+	}
+	html:has(> body:not(.black):not(.dark):not(.doomone):not(.dracula):not(.gold):not(.gruvboxdark):not(.gruvboxlight):not(.icebergDark):not(.laserwave):not(.libredditBlack):not(.libredditDark):not(.libredditLight):not(.light):not(.midnightPurple):not(.nord):not(.rosebox):not(.tokyoNight):not(.violet):not(.indigo):not(.abismo):not(.grafite):not(.floresta):not(.aurora)) :focus-visible {
+		outline: 2px solid var(--g-acc);
+		outline-offset: 2px;
 	}
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-	html:has(> body.dark) {
-		--glass-surface: rgba(22, 27, 50, .95);
-		--glass-surface-hover: rgba(28, 34, 62, .97);
-		--glass-comment: rgba(22, 27, 50, .95);
-		--glass-nested: rgba(28, 34, 62, .96);
-		--glass-chip: rgba(22, 27, 50, .95);
-		--glass-search-bg: rgba(22, 27, 50, .95);
-		--glass-act: rgba(22, 27, 50, .95);
-		--glass-flair-bg: rgba(22, 27, 50, .95);
+	html:has(> body.dark),
+	html:has(> body.indigo),
+	html:has(> body.abismo),
+	html:has(> body.grafite),
+	html:has(> body.floresta),
+	html:has(> body.aurora) {
+		--glass-surface: var(--g-fb);
+		--glass-surface-hover: var(--g-fb);
+		--glass-comment: var(--g-fb);
+		--glass-nested: var(--g-fb);
+		--glass-chip: var(--g-fb);
+		--glass-search-bg: var(--g-fb);
+		--glass-act: var(--g-fb);
+		--glass-flair-bg: var(--g-fb);
 		--glass-blur: none;
 		--glass-chip-blur: none;
 	}
 }
-
 @media not (prefers-color-scheme: light) {
 	@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-		html:has(> body:not(.black):not(.dark):not(.doomone):not(.dracula):not(.gold):not(.gruvboxdark):not(.gruvboxlight):not(.icebergDark):not(.laserwave):not(.libredditBlack):not(.libredditDark):not(.libredditLight):not(.light):not(.midnightPurple):not(.nord):not(.rosebox):not(.tokyoNight):not(.violet)) {
-			--glass-surface: rgba(22, 27, 50, .95);
-			--glass-surface-hover: rgba(28, 34, 62, .97);
-			--glass-comment: rgba(22, 27, 50, .95);
-			--glass-nested: rgba(28, 34, 62, .96);
-			--glass-chip: rgba(22, 27, 50, .95);
-			--glass-search-bg: rgba(22, 27, 50, .95);
-			--glass-act: rgba(22, 27, 50, .95);
-			--glass-flair-bg: rgba(22, 27, 50, .95);
+		html:has(> body:not(.black):not(.dark):not(.doomone):not(.dracula):not(.gold):not(.gruvboxdark):not(.gruvboxlight):not(.icebergDark):not(.laserwave):not(.libredditBlack):not(.libredditDark):not(.libredditLight):not(.light):not(.midnightPurple):not(.nord):not(.rosebox):not(.tokyoNight):not(.violet):not(.indigo):not(.abismo):not(.grafite):not(.floresta):not(.aurora)) {
+			--glass-surface: var(--g-fb);
+			--glass-surface-hover: var(--g-fb);
+			--glass-comment: var(--g-fb);
+			--glass-nested: var(--g-fb);
+			--glass-chip: var(--g-fb);
+			--glass-search-bg: var(--g-fb);
+			--glass-act: var(--g-fb);
+			--glass-flair-bg: var(--g-fb);
 			--glass-blur: none;
 			--glass-chip-blur: none;
 		}
@@ -2521,6 +2579,21 @@ body {
 nav {
 	margin: var(--glass-nav-margin, 0);
 	border-radius: var(--glass-nav-radius, 0);
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+	min-width: 0;
+}
+/* Blur lives on ::before so position:fixed descendants (the feeds menu) are not trapped. */
+nav::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	border-radius: inherit;
 	background: var(--glass-surface, var(--md-sys-color-surface-container));
 	border: var(--glass-border, 0 solid transparent);
 	border-top-color: var(--glass-border-top, transparent);
@@ -2668,37 +2741,279 @@ textarea:focus {
 	border-color: var(--glass-focus, var(--md-sys-color-primary));
 }
 
-html:has(> body.dark) select,
-html:has(> body.dark) #search_sort select {
-	background-color: #161b32;
+select,
+#search_sort select {
+	background-color: var(--g-fb);
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c5cbe0'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
 	background-repeat: no-repeat;
 	background-position: right 8px center;
 	background-size: 24px;
-	border-color: rgba(190, 200, 240, .28);
-	color: #e8eaf4;
+	border-color: rgba(var(--g-line), .28);
+	color: var(--g-text);
 }
 
-@media not (prefers-color-scheme: light) {
-	html:has(> body:not(.black):not(.dark):not(.doomone):not(.dracula):not(.gold):not(.gruvboxdark):not(.gruvboxlight):not(.icebergDark):not(.laserwave):not(.libredditBlack):not(.libredditDark):not(.libredditLight):not(.light):not(.midnightPurple):not(.nord):not(.rosebox):not(.tokyoNight):not(.violet)) select,
-	html:has(> body:not(.black):not(.dark):not(.doomone):not(.dracula):not(.gold):not(.gruvboxdark):not(.gruvboxlight):not(.icebergDark):not(.laserwave):not(.libredditBlack):not(.libredditDark):not(.libredditLight):not(.light):not(.midnightPurple):not(.nord):not(.rosebox):not(.tokyoNight):not(.violet)) #search_sort select {
-		background-color: #161b32;
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c5cbe0'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-		background-repeat: no-repeat;
-		background-position: right 8px center;
-		background-size: 24px;
-		border-color: rgba(190, 200, 240, .28);
-		color: #e8eaf4;
-	}
+main, #column_one, #posts, .post, body > footer { min-width: 0; max-width: 100%; }
+.post_media_content, .post_media_image, .post_media_video, .gallery, .gallery img, video, iframe {
+	max-width: 100%;
+	min-width: 0;
 }
+
+.tabbar { display: none; }
 
 @media (max-width: 600px) {
-	#redlib { display: var(--glass-logo, flex); }
-	nav { flex-wrap: var(--glass-nav-wrap, wrap); }
-	#searchbox {
-		order: var(--glass-search-order, 3);
-		flex-basis: var(--glass-search-basis, 100%);
-		width: var(--glass-search-width, 100%);
-		max-width: var(--glass-search-max, none);
+	html, body { max-width: 100%; overflow-x: clip; }
+	body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+	#redlib { display: none; }
+	#links #settings_link { display: none; }
+	#logo {
+		position: absolute;
+		width: 0;
+		height: 0;
+		min-width: 0;
+		flex: 0 0 0;
+		overflow: visible;
+		gap: 0;
 	}
+	/* Backdrop-filtered post cards were painting over the fixed bar. Keep page
+	   content in a lower layer; the top nav stays above the bar so Feeds does too. */
+	main { position: relative; z-index: 0; }
+	nav:not(.tabbar) { flex-wrap: nowrap; overflow: visible; z-index: 50; }
+	#searchbox {
+		order: 1;
+		flex: 1 1 0;
+		flex-basis: 0;
+		width: auto;
+		min-width: 0;
+		max-width: 100%;
+	}
+	#searchbox #search {
+		flex: 1 1 0;
+		width: 0;
+		min-width: 0;
+	}
+	#inside { min-width: 0; flex-shrink: 1; }
+	#links { order: 2; flex: 0 0 auto; }
+	#column_one, main, #posts, form#sort, #column_one > form#sort, #column_one > div#sort {
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
+	}
+	#column_one > form#sort, #column_one > div#sort {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		overflow-y: hidden;
+		max-width: 100%;
+		width: 100%;
+		min-width: 0;
+		scrollbar-width: none;
+		scroll-snap-type: x proximity;
+		padding-right: 28px;
+		-webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+		mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+	}
+	#column_one > form#sort::-webkit-scrollbar,
+	#column_one > div#sort::-webkit-scrollbar { display: none; height: 0; }
+	#column_one > form#sort .field {
+		flex: 0 0 auto;
+		width: auto;
+		min-width: 148px;
+		max-width: none;
+		scroll-snap-align: start;
+	}
+	div#sort_options, div#listing_options {
+		flex: 0 0 auto;
+		width: max-content;
+		max-width: none;
+		min-width: 0;
+		overflow: visible;
+		flex-wrap: nowrap;
+	}
+	div#sort_options > a, div#listing_options > a {
+		flex: 0 0 auto;
+		overflow: visible;
+		text-overflow: clip;
+		scroll-snap-align: start;
+	}
+
+	.tabbar {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		position: fixed;
+		z-index: 45;
+		left: 10px;
+		right: 10px;
+		bottom: calc(10px + env(safe-area-inset-bottom));
+		height: 62px;
+		margin: 0;
+		padding: 0;
+		border-radius: 24px;
+		background: var(--glass-surface, var(--md-sys-color-surface-container));
+		border: var(--glass-border, 1px solid var(--md-sys-color-outline-variant));
+		border-top-color: var(--glass-border-top, var(--md-sys-color-outline-variant));
+		box-shadow: var(--glass-shadow, var(--md-sys-elevation-level2));
+		-webkit-backdrop-filter: var(--glass-blur, none);
+		backdrop-filter: var(--glass-blur, none);
+		min-width: 0;
+		max-width: calc(100vw - 20px);
+	}
+	.tabbar .tab {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 2px;
+		min-width: 0;
+		height: 100%;
+		text-decoration: none;
+		color: var(--glass-muted, var(--md-sys-color-on-surface-variant));
+		font: 500 11px/1.2 var(--md-ref-typeface-plain);
+	}
+	.tabbar .tab svg {
+		width: 22px;
+		height: 22px;
+	}
+	.tabbar .tab.on {
+		color: var(--glass-accent, var(--md-sys-color-primary));
+	}
+	.tabbar .tab.on svg {
+		background: var(--glass-nav-active, color-mix(in srgb, var(--md-sys-color-primary) 22%, transparent));
+		border-radius: 999px;
+		padding: 2px 14px;
+		box-sizing: content-box;
+	}
+	details#feeds {
+		position: fixed;
+		z-index: 46;
+		left: calc(10px + (100vw - 20px) / 2);
+		width: calc((100vw - 20px) / 4);
+		bottom: calc(10px + env(safe-area-inset-bottom));
+		height: 62px;
+		margin: 0;
+		display: flex;
+		align-items: stretch;
+		justify-content: center;
+		overflow: hidden;
+	}
+	details#feeds[open] { overflow: visible; }
+	details#feeds > summary {
+		flex-direction: column;
+		justify-content: center;
+		gap: 2px;
+		width: 100%;
+		height: 100%;
+		padding: 6px 0;
+		border: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+		color: var(--glass-muted, var(--md-sys-color-on-surface-variant));
+		opacity: 1;
+		font: 500 11px/1.2 var(--md-ref-typeface-plain);
+	}
+	details#feeds > summary:hover,
+	details#feeds > summary:focus,
+	details#feeds > summary:focus-visible {
+		color: var(--glass-muted, var(--md-sys-color-on-surface-variant));
+		background: transparent;
+		text-decoration: none;
+	}
+	details#feeds > summary svg:last-child { display: none; }
+	details#feeds > summary svg:first-child { width: 22px; height: 22px; background: none; }
+	details#feeds[open] > #feed_list {
+		position: fixed;
+		top: auto;
+		left: 12px;
+		right: 12px;
+		bottom: calc(78px + env(safe-area-inset-bottom));
+		width: auto;
+		min-width: 0;
+		max-width: calc(100vw - 24px);
+		max-height: min(50vh, 420px);
+	}
+	body.no-top-search nav:not(.tabbar),
+	nav:not(.tabbar):not(:has(#searchbox)) { display: none; }
+	body.no-top-search main,
+	body:not(:has(nav:not(.tabbar) #searchbox)) main {
+		padding-top: calc(10px + env(safe-area-inset-top));
+	}
+}
+
+@media (min-width: 601px) {
+	.chrome {
+		display: grid;
+		grid-template-columns: auto 1fr minmax(0, 640px) 1fr auto;
+		align-items: center;
+		column-gap: 12px;
+		position: sticky;
+		top: var(--glass-nav-top, 0);
+		z-index: 20;
+		margin: var(--glass-nav-margin, 0);
+		border-radius: var(--glass-nav-radius, 22px);
+		min-height: 64px;
+		padding: 0 16px 0 20px;
+	}
+	.chrome::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		border-radius: inherit;
+		background: var(--glass-surface, var(--md-sys-color-surface-container));
+		border: var(--glass-border, 0 solid transparent);
+		border-top-color: var(--glass-border-top, transparent);
+		box-shadow: var(--glass-shadow, var(--md-sys-elevation-level2));
+		-webkit-backdrop-filter: var(--glass-blur, none);
+		backdrop-filter: var(--glass-blur, none);
+	}
+	.chrome > nav:not(.tabbar) {
+		display: contents;
+	}
+	.chrome > nav:not(.tabbar)::before { content: none; }
+	#logo, #links { display: contents; }
+	#redlib { grid-column: 1; justify-self: start; }
+	details#feeds { grid-column: 2; justify-self: center; }
+	#searchbox {
+		grid-column: 3;
+		justify-self: center;
+		width: 100%;
+		max-width: 640px;
+		margin: 0;
+	}
+	#reddit_link { grid-column: 4; justify-self: center; }
+	#settings_link { grid-column: 5; justify-self: end; }
+	#links > .popup { grid-column: 1; }
+}
+
+@media (min-width: 900px) {
+	main {
+		width: min(100% - 48px, 1320px);
+		max-width: 1320px;
+		margin-left: auto;
+		margin-right: auto;
+		padding-left: 0;
+		padding-right: 0;
+		justify-content: center;
+		align-items: flex-start;
+		flex-wrap: wrap;
+	}
+	#column_one, #column_one.panel {
+		flex: 1 1 520px;
+		width: min(100%, 960px);
+		max-width: 960px;
+		min-width: 0;
+	}
+	aside, #subreddit, #user, #sidebar {
+		flex: 0 0 320px;
+		width: 320px;
+		max-width: 320px;
+	}
+	body { font-size: 16px; }
+	.post_title { font-size: 20px; line-height: 28px; }
+	.post.highlighted .post_title { font-size: 28px; line-height: 36px; }
+	.post_header { font-size: 13px; }
+	.post_thumbnail { width: 100%; max-width: 100%; }
+	.post_thumbnail div, .post_thumbnail > svg { height: auto; max-height: 520px; max-width: 100%; }
 }

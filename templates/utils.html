@@ -304,13 +304,6 @@
 		<span>{% if post.post_type == "link" %}{{ post.domain }}{% else %}{{ post.post_type }}{% endif %}</span>
 	</a>
 	{% endif %}
-	<div class="post_score" title="{{ post.score.1 }}">
-    {% if prefs.hide_score != "on" %}
-    {{ post.score.0 }}
-    {% else %}
-    &#x2022;
-    {% endif %}
-    <span class="label"> Upvotes</span></div>
 	<div class="post_body post_preview">
 		{{ post.body|safe }}
 	</div>
@@ -318,6 +311,13 @@
 	{% call poll(post) %}
 
 	<div class="post_footer">
+		<div class="post_score" title="{{ post.score.1 }}">
+		{% if prefs.hide_score != "on" %}
+		{{ post.score.0 }}
+		{% else %}
+		&#x2022;
+		{% endif %}
+		<span class="label"> Upvotes</span></div>
 		<a href="{{ post.permalink }}" class="post_comments" title="{{ post.comments.1 }} {% if post.comments.1 == "1" %}comment{% else %}comments{% endif %}">{{ post.comments.0 }} {% if post.comments.1 == "1" %}comment{% else %}comments{% endif %}</a>
 		<span class="ratio">{{ post.upvote_ratio }}% upvoted <span class="bar"><span style="width:{{ post.upvote_ratio }}%"></span></span></span>
 	</div>

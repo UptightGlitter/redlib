@@ -1,0 +1,34 @@
+/* Índigo — dark glass theme. */
+html:has(> body.indigo),
+body.indigo {
+	color-scheme: dark;
+	--g-bg: #0a0d1f;
+	--g-b1: 88, 70, 170;
+	--g-b2: 50, 80, 170;
+	--g-b3: 70, 50, 140;
+	--g-tt: 150, 165, 210;
+	--g-tb: 40, 48, 80;
+	--g-line: 190, 200, 240;
+	--g-text: #e8eaf4;
+	--g-muted: #c3c8de;
+	--g-acc: #a78bfa;
+	--g-acc2: #c4b5fd;
+	--g-accf: 139, 108, 240;
+	--g-r1: #a78bfa;
+	--g-r2: #7dd3fc;
+	--g-r3: #94a3b8;
+	--g-fb: #161b32;
+	--md-sys-color-primary: var(--g-acc2);
+	--md-sys-color-on-surface: var(--g-text);
+	--md-sys-color-surface: var(--g-bg);
+	--md-sys-color-background: var(--g-bg);
+	--md-sys-color-on-surface-variant: var(--g-muted);
+	--md-sys-color-surface-container: var(--g-fb);
+	--md-sys-color-surface-container-low: var(--g-fb);
+	--md-sys-color-surface-container-high: var(--g-fb);
+	--md-sys-color-surface-container-highest: var(--g-fb);
+	--accent: var(--g-acc);
+	--text: var(--g-text);
+	--background: var(--g-bg);
+	--upvote: var(--g-acc);
+}
