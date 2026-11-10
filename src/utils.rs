@@ -15,7 +15,6 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use serde_json_path::{JsonPath, JsonPathExt};
 use std::collections::{HashMap, HashSet};
-use std::env;
 use std::io::{Read, Write};
 use std::str::FromStr;
 use std::string::ToString;
