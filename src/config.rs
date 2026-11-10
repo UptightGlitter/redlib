@@ -143,7 +143,8 @@ impl Config {
 			default_show_nsfw: parse("REDLIB_DEFAULT_SHOW_NSFW"),
 			default_blur_nsfw: parse("REDLIB_DEFAULT_BLUR_NSFW"),
 			default_use_hls: parse("REDLIB_DEFAULT_USE_HLS"),
-			default_hide_hls_notification: parse("REDLIB_DEFAULT_HIDE_HLS_NOTIFICATION"),
+			// Fallback: accept the undocumented REDLIB_HIDE_HLS_NOTIFICATION name used by older setups.
+			default_hide_hls_notification: parse("REDLIB_DEFAULT_HIDE_HLS_NOTIFICATION").or_else(|| var("REDLIB_HIDE_HLS_NOTIFICATION").ok()),
 			default_hide_awards: parse("REDLIB_DEFAULT_HIDE_AWARDS"),
 			default_hide_sidebar_and_summary: parse("REDLIB_DEFAULT_HIDE_SIDEBAR_AND_SUMMARY"),
 			default_hide_score: parse("REDLIB_DEFAULT_HIDE_SCORE"),
