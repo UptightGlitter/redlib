@@ -77,9 +77,91 @@
 		function syncSave() {
 			savebar.classList.toggle("is-dirty", snap() !== initial);
 		}
+		function applyTheme() {
+			var theme = document.getElementById("theme");
+			if (!theme) return;
+			var names = ["indigo", "abismo", "grafite", "floresta", "aurora", "dark", "light", "dracula", "system", "black", "nord"];
+			for (var n = 0; n < theme.options.length; n++) names.push(theme.options[n].value);
+			names.forEach(function (name) { document.body.classList.remove(name); });
+			if (theme.value && theme.value !== "system") document.body.classList.add(theme.value);
+		}
+		function setControl(el, value) {
+			if (el.type === "checkbox" || el.type === "radio") el.checked = value === "on";
+			else el.value = value;
+		}
+		var restoreBtn = document.getElementById("restore_defaults");
+		var cancelBtn = document.getElementById("cancel_changes");
+		if (restoreBtn) restoreBtn.addEventListener("click", function () {
+			var fields = settingsForm.querySelectorAll("[data-default]");
+			for (var i = 0; i < fields.length; i++) setControl(fields[i], fields[i].getAttribute("data-default"));
+			applyTheme();
+			syncSave();
+		});
+		if (cancelBtn) cancelBtn.addEventListener("click", function () {
+			settingsForm.reset();
+			applyTheme();
+			syncSave();
+		});
+		settingsForm.addEventListener("submit", function () {
+			try { sessionStorage.setItem("redlib-salvo", "1"); } catch (e) {}
+		});
 		settingsForm.addEventListener("input", syncSave);
 		settingsForm.addEventListener("change", syncSave);
 	}
+
+	try {
+		if (sessionStorage.getItem("redlib-salvo") === "1") {
+			sessionStorage.removeItem("redlib-salvo");
+			var toast = document.createElement("div");
+			toast.className = "salvo-toast";
+			toast.setAttribute("role", "status");
+			toast.setAttribute("aria-live", "polite");
+			toast.innerHTML = "<strong>Salvo</strong><span>Preferências atualizadas</span>";
+			document.body.appendChild(toast);
+			var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+			setTimeout(function () {
+				if (reduceMotion) { toast.remove(); return; }
+				toast.classList.add("hide");
+				setTimeout(function () { toast.remove(); }, 200);
+			}, 3000);
+		}
+	} catch (e) {}
+
+	function hideSkeleton() {
+		var sk = document.getElementById("sx-skel");
+		if (sk) sk.remove();
+		var hosts = document.querySelectorAll(".is-loading");
+		for (var h = 0; h < hosts.length; h++) hosts[h].classList.remove("is-loading");
+	}
+	function showSkeleton() {
+		if (document.getElementById("sx-skel")) return;
+		var host = document.getElementById("posts") || document.getElementById("column_one") || document.querySelector("main");
+		if (!host) return;
+		host.classList.add("is-loading");
+		var el = document.createElement("div");
+		el.id = "sx-skel";
+		el.setAttribute("role", "status");
+		el.setAttribute("aria-live", "polite");
+		el.innerHTML = '<p class="sr-only">Loading</p>'
+			+ '<div class="sx-skel-card"><i class="sm"></i><i class="lg"></i><i></i><i class="media"></i></div>'
+			+ '<div class="sx-skel-card"><i class="sm"></i><i class="lg"></i><i class="media"></i></div>';
+		host.appendChild(el);
+	}
+	document.addEventListener("click", function (e) {
+		if (e.defaultPrevented || e.button !== 0) return;
+		if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+		var node = e.target;
+		var a = node && node.closest ? node.closest("a") : null;
+		if (!a || !a.getAttribute("href")) return;
+		if (a.target && a.target !== "_self") return;
+		if (a.hasAttribute("download")) return;
+		var url;
+		try { url = new URL(a.href, window.location.href); } catch (err) { return; }
+		if (url.origin !== window.location.origin) return;
+		if (url.pathname === window.location.pathname && url.search === window.location.search) return;
+		showSkeleton();
+	});
+	window.addEventListener("pageshow", hideSkeleton);
 
 	var RECENT_KEY = "redlib-recent-searches";
 	function readRecent() {
@@ -181,10 +263,9 @@
 	initBackSwipe();
 
 	var sel = document.getElementById("theme");
-	if (!sel) return;
-	var names = ["indigo", "abismo", "grafite", "floresta", "aurora", "dark", "light", "dracula", "system", "black", "nord"];
-	for (var i = 0; i < sel.options.length; i++) names.push(sel.options[i].value);
-	sel.addEventListener("change", function () {
+	if (sel) sel.addEventListener("change", function () {
+		var names = ["indigo", "abismo", "grafite", "floresta", "aurora", "dark", "light", "dracula", "system", "black", "nord"];
+		for (var i = 0; i < sel.options.length; i++) names.push(sel.options[i].value);
 		names.forEach(function (name) { document.body.classList.remove(name); });
 		if (sel.value && sel.value !== "system") document.body.classList.add(sel.value);
 	});

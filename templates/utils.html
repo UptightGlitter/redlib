@@ -70,7 +70,7 @@
 		<span class="dot">&bull;</span>
 		<a class="post_author {{ post.author.distinguished }}" href="/user/{{ post.author.name }}">u/{{ post.author.name }}</a>
 		{% if post.author.flair.flair_parts.len() > 0 %}
-			<small class="author_flair">{% call render_flair(post.author.flair.flair_parts) %}</small>
+			<small class="author_flair"{% if post.author.flair.background_color != "" %} style="--flair: {{ post.author.flair.background_color }};"{% endif %}>{% call render_flair(post.author.flair.flair_parts) %}</small>
 		{% endif %}
 		<span class="dot">&bull;</span>
 		<span class="created" title="{{ post.created }}">{{ post.rel_time }}</span>
@@ -89,8 +89,7 @@
 	<h1 class="post_title">
 		{% if post.flair.flair_parts.len() > 0 %}
 			<a href="/r/{{ post.community }}/search?q=flair_name%3A%22{{ post.flair.text }}%22&restrict_sr=on"
-				class="post_flair"
-				style="color:{{ post.flair.foreground_color }}; background:{{ post.flair.background_color }};">{% call render_flair(post.flair.flair_parts) %}</a>
+				class="post_flair"{% if post.flair.background_color != "" %} style="--flair: {{ post.flair.background_color }};"{% endif %}>{% call render_flair(post.flair.flair_parts) %}</a>
 		{% endif %}
 		{{ post.title }}
 		{% if post.flags.nsfw %} <small class="nsfw">NSFW</small>{% endif %}
@@ -231,6 +230,9 @@
 		<a class="post_subreddit" href="/{{ community }}">{{ community }}</a>
 		<span class="dot">&bull;</span>
 		<a class="post_author {{ post.author.distinguished }}" href="/u/{{ post.author.name }}">u/{{ post.author.name }}</a>
+		{% if post.author.flair.flair_parts.len() > 0 %}
+			<small class="author_flair"{% if post.author.flair.background_color != "" %} style="--flair: {{ post.author.flair.background_color }};"{% endif %}>{% call render_flair(post.author.flair.flair_parts) %}</small>
+		{% endif %}
 		<span class="dot">&bull;</span>
 		<span class="created" title="{{ post.created }}">{{ post.rel_time }}</span>
 		{% if !post.awards.is_empty() && prefs.hide_awards != "on" %}
@@ -241,14 +243,22 @@
 			{% endfor %}
 		{% endif %}
 	</p>
-	<h2 class="post_title">
+	{% if post.flair.flair_parts.len() > 0 || post.flags.nsfw || post.flags.spoiler || post.post_type != "self" %}
+	<div class="post_badges">
 		{% if post.flair.flair_parts.len() > 0 %}
 			<a href="/r/{{ post.community }}/search?q=flair_name%3A%22{{ post.flair.text }}%22&restrict_sr=on"
-				class="post_flair"
-				style="color:{{ post.flair.foreground_color }}; background:{{ post.flair.background_color }};"
+				class="post_flair"{% if post.flair.background_color != "" %} style="--flair: {{ post.flair.background_color }};"{% endif %}
 				dir="ltr">{% call render_flair(post.flair.flair_parts) %}</a>
 		{% endif %}
-		<a href="{{ post.permalink }}">{{ post.title }}</a>{% if post.flags.nsfw %} <small class="nsfw">NSFW</small>{% endif %}{% if post.flags.spoiler %} <small class="spoiler">Spoiler</small>{% endif %}
+		{% if post.flags.nsfw %}<span class="nsfw">NSFW</span>{% endif %}
+		{% if post.flags.spoiler %}<span class="spoiler">Spoiler</span>{% endif %}
+		{% if post.post_type != "self" %}
+		<span class="type_badge">{% if post.post_type == "link" %}{{ post.domain }}{% else if post.post_type == "image" %}Image{% else if post.post_type == "video" %}Video{% else if post.post_type == "gif" %}GIF{% else if post.post_type == "gallery" %}Gallery{% else %}{{ post.post_type }}{% endif %}</span>
+		{% endif %}
+	</div>
+	{% endif %}
+	<h2 class="post_title">
+		<a href="{{ post.permalink }}">{{ post.title }}</a>
 	</h2>
 	<!-- POST MEDIA/THUMBNAIL -->
 	{% if post.post_type == "image" %}

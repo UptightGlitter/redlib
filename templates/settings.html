@@ -27,7 +27,7 @@
 				<div class="prefs-group">
 					<label for="theme">Theme</label>
 					<div class="field">
-						<select name="theme" id="theme">
+						<select name="theme" id="theme" data-default="indigo">
 							{% for value in prefs.available_themes %}
 								{% if value != "system" %}
 								<option value="{{ value }}" {% if prefs.theme == value.to_string() || (value == "indigo" && prefs.theme != "abismo" && prefs.theme != "grafite" && prefs.theme != "floresta" && prefs.theme != "aurora") %}selected{% endif %}>
@@ -44,13 +44,13 @@
 				<div class="prefs-group">
 					<label for="remove_default_feeds">Remove default feeds<span class="sub">Hide Popular and All from the Feeds menu</span></label>
 					<input type="hidden" value="off" name="remove_default_feeds">
-					<input class="switch" type="checkbox" role="switch" name="remove_default_feeds" id="remove_default_feeds" {% if
+					<input class="switch" type="checkbox" role="switch" name="remove_default_feeds" id="remove_default_feeds" data-default="off" {% if
 						prefs.remove_default_feeds=="on" %}checked{% endif %}>
 				</div>
 				<div class="prefs-group">
 					<label for="front_page">Front page</label>
 					<div class="field">
-						<select name="front_page" id="front_page">
+						<select name="front_page" id="front_page" data-default="default">
 							{% call utils::options(prefs.front_page, ["default", "popular", "all"], "default") %}
 						</select>
 					</div>
@@ -58,7 +58,7 @@
 				<div class="prefs-group">
 					<label for="layout">Layout</label>
 					<div class="field">
-						<select name="layout" id="layout">
+						<select name="layout" id="layout" data-default="card">
 							{% call utils::options(prefs.layout, ["card", "clean", "compact"], "card") %}
 						</select>
 					</div>
@@ -66,12 +66,12 @@
 				<div class="prefs-group">
 					<label for="wide">Wide UI</label>
 					<input type="hidden" value="off" name="wide">
-					<input class="switch" type="checkbox" role="switch" name="wide" id="wide" {% if prefs.wide=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="wide" id="wide" data-default="off" {% if prefs.wide=="on" %}checked{% endif %}>
 				</div>
 				<div class="prefs-group">
 					<label for="fullscreen">Full screen<span class="sub">Applies after re-adding the app to the home screen.</span></label>
 					<input type="hidden" value="off" name="fullscreen">
-					<input class="switch" type="checkbox" role="switch" name="fullscreen" id="fullscreen" {% if prefs.fullscreen=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="fullscreen" id="fullscreen" data-default="on" {% if prefs.fullscreen=="on" %}checked{% endif %}>
 				</div>
 			</fieldset>
 			<fieldset>
@@ -79,7 +79,7 @@
 				<div class="prefs-group">
 					<label for="video_quality">Video quality</label>
 					<div class="field">
-						<select name="video_quality" id="video_quality">
+						<select name="video_quality" id="video_quality" data-default="best">
 							{% call utils::options(prefs.video_quality, ["best", "medium", "worst"], "best") %}
 						</select>
 					</div>
@@ -87,7 +87,7 @@
 				<div class="prefs-group">
 					<label for="post_sort" title="Applies only to subreddit feeds">Default subreddit post sort</label>
 					<div class="field">
-						<select name="post_sort" id="post_sort">
+						<select name="post_sort" id="post_sort" data-default="hot">
 							{% call utils::options(prefs.post_sort, ["hot", "new", "top", "rising", "controversial"], "hot") %}
 						</select>
 					</div>
@@ -95,7 +95,7 @@
 				<div class="prefs-group">
 					<label for="comment_sort">Default comment sort</label>
 					<div class="field">
-						<select name="comment_sort" id="comment_sort">
+						<select name="comment_sort" id="comment_sort" data-default="confidence">
 							{% call utils::options(prefs.comment_sort, ["confidence", "top", "new", "controversial", "old"], "confidence") %}
 						</select>
 					</div>
@@ -103,34 +103,34 @@
 				<div class="prefs-group">
 					<label for="blur_spoiler">Blur spoiler previews</label>
 					<input type="hidden" value="off" name="blur_spoiler">
-					<input class="switch" type="checkbox" role="switch" name="blur_spoiler" id="blur_spoiler" {% if prefs.blur_spoiler=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="blur_spoiler" id="blur_spoiler" data-default="off" {% if prefs.blur_spoiler=="on" %}checked{% endif %}>
 				</div>
 				{% if !crate::utils::sfw_only() %}
 				<div class="prefs-group">
 					<label for="show_nsfw">Show NSFW posts</label>
 					<input type="hidden" value="off" name="show_nsfw">
-					<input class="switch" type="checkbox" role="switch" name="show_nsfw" id="show_nsfw" {% if prefs.show_nsfw=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="show_nsfw" id="show_nsfw" data-default="off" {% if prefs.show_nsfw=="on" %}checked{% endif %}>
 				</div>
 				<div class="prefs-group">
 					<label for="blur_nsfw">Blur NSFW previews</label>
 					<input type="hidden" value="off" name="blur_nsfw">
-					<input class="switch" type="checkbox" role="switch" name="blur_nsfw" id="blur_nsfw" {% if prefs.blur_nsfw=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="blur_nsfw" id="blur_nsfw" data-default="off" {% if prefs.blur_nsfw=="on" %}checked{% endif %}>
 				</div>
 				{% endif %}
 				<div class="prefs-group">
 					<label for="autoplay_videos">Autoplay videos</label>
 					<input type="hidden" value="off" name="autoplay_videos">
-					<input class="switch" type="checkbox" role="switch" name="autoplay_videos" id="autoplay_videos" {% if prefs.autoplay_videos=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="autoplay_videos" id="autoplay_videos" data-default="off" {% if prefs.autoplay_videos=="on" %}checked{% endif %}>
 				</div>
 				<div class="prefs-group">
 					<label for="fixed_navbar">Keep navbar fixed</label>
 					<input type="hidden" value="off" name="fixed_navbar">
-					<input class="switch" type="checkbox" role="switch" name="fixed_navbar" id="fixed_navbar" {% if prefs.fixed_navbar=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="fixed_navbar" id="fixed_navbar" data-default="on" {% if prefs.fixed_navbar=="on" %}checked{% endif %}>
 				</div>
 				<div class="prefs-group">
 					<label for="hide_sidebar_and_summary">Hide the summary and sidebar</label>
 					<input type="hidden" value="off" name="hide_sidebar_and_summary">
-					<input class="switch" type="checkbox" role="switch" name="hide_sidebar_and_summary" id="hide_sidebar_and_summary" {% if prefs.hide_sidebar_and_summary=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="hide_sidebar_and_summary" id="hide_sidebar_and_summary" data-default="off" {% if prefs.hide_sidebar_and_summary=="on" %}checked{% endif %}>
 				</div>
 				<div class="prefs-group has-help">
 					<label for="use_hls">Use HLS for videos<span class="sub">Needed for videos with audio; loads hls.js</span></label>
@@ -138,31 +138,35 @@
 						<summary>Why?</summary>
 					</details>
 					<input type="hidden" value="off" name="use_hls">
-					<input class="switch" type="checkbox" role="switch" name="use_hls" id="use_hls" {% if prefs.use_hls=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="use_hls" id="use_hls" data-default="on" {% if prefs.use_hls=="on" %}checked{% endif %}>
 					<div id="hls_help" class="helper">Reddit videos require JavaScript (via HLS.js) to be enabled to be played with audio. Therefore, this toggle lets you either use Redlib JS-free or utilize this feature.</div>
 				</div>
 				<div class="prefs-group">
 					<label for="hide_hls_notification">Hide notification about possible HLS usage</label>
 					<input type="hidden" value="off" name="hide_hls_notification">
-					<input class="switch" type="checkbox" role="switch" name="hide_hls_notification" id="hide_hls_notification" {% if prefs.hide_hls_notification=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="hide_hls_notification" id="hide_hls_notification" data-default="off" {% if prefs.hide_hls_notification=="on" %}checked{% endif %}>
 				</div>
 				<div class="prefs-group">
 					<label for="hide_awards">Hide awards</label>
 					<input type="hidden" value="off" name="hide_awards">
-					<input class="switch" type="checkbox" role="switch" name="hide_awards" id="hide_awards" {% if prefs.hide_awards=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="hide_awards" id="hide_awards" data-default="off" {% if prefs.hide_awards=="on" %}checked{% endif %}>
 				</div>
 				<div class="prefs-group">
 					<label for="hide_score">Hide score</label>
 					<input type="hidden" value="off" name="hide_score">
-					<input class="switch" type="checkbox" role="switch" name="hide_score" id="hide_score" {% if prefs.hide_score=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="hide_score" id="hide_score" data-default="off" {% if prefs.hide_score=="on" %}checked{% endif %}>
 				</div>
 				<div class="prefs-group">
 					<label for="disable_visit_reddit_confirmation">Do not confirm before visiting content on Reddit</label>
 					<input type="hidden" value="off" name="disable_visit_reddit_confirmation">
-					<input class="switch" type="checkbox" role="switch" name="disable_visit_reddit_confirmation" id="disable_visit_reddit_confirmation" {% if prefs.disable_visit_reddit_confirmation=="on" %}checked{% endif %}>
+					<input class="switch" type="checkbox" role="switch" name="disable_visit_reddit_confirmation" id="disable_visit_reddit_confirmation" data-default="off" {% if prefs.disable_visit_reddit_confirmation=="on" %}checked{% endif %}>
 				</div>
 			</fieldset>
-			<div class="savebar"><input id="save" type="submit" value="Salvar"></div>
+			<div class="savebar">
+				<button id="save" class="btn-primary" type="submit">Salvar</button>
+				<button id="restore_defaults" class="btn-outline" type="button">Restaurar</button>
+				<button id="cancel_changes" class="btn-ghost" type="button">Cancelar</button>
+			</div>
 		</div>
 	</form>
 	{% if prefs.subscriptions.len() > 0 %}
