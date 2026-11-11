@@ -127,14 +127,23 @@
 		}
 	} catch (e) {}
 
+	var skelTimer = 0;
 	function hideSkeleton() {
+		clearTimeout(skelTimer);
+		skelTimer = 0;
 		var sk = document.getElementById("sx-skel");
 		if (sk) sk.remove();
 		var hosts = document.querySelectorAll(".is-loading");
 		for (var h = 0; h < hosts.length; h++) hosts[h].classList.remove("is-loading");
 	}
+	function viewerImageLink(a) {
+		if (!a || a.hasAttribute("download") || a.target === "_blank") return false;
+		if (a.classList.contains("post_media_image")) return true;
+		var href = a.getAttribute("href") || "";
+		return /^\/(img|preview|thumb)\//.test(href) && !!a.querySelector("img");
+	}
 	function showSkeleton() {
-		if (document.getElementById("sx-skel")) return;
+		if (document.getElementById("sx-skel") || document.body.classList.contains("image-open")) return;
 		var host = document.getElementById("posts") || document.getElementById("column_one") || document.querySelector("main");
 		if (!host) return;
 		host.classList.add("is-loading");
@@ -146,13 +155,16 @@
 			+ '<div class="sx-skel-card"><i class="sm"></i><i class="lg"></i><i></i><i class="media"></i></div>'
 			+ '<div class="sx-skel-card"><i class="sm"></i><i class="lg"></i><i class="media"></i></div>';
 		host.appendChild(el);
+		clearTimeout(skelTimer);
+		skelTimer = setTimeout(hideSkeleton, 8000);
 	}
 	document.addEventListener("click", function (e) {
 		if (e.defaultPrevented || e.button !== 0) return;
 		if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+		if (document.body.classList.contains("image-open")) return;
 		var node = e.target;
 		var a = node && node.closest ? node.closest("a") : null;
-		if (!a || !a.getAttribute("href")) return;
+		if (!a || !a.getAttribute("href") || viewerImageLink(a)) return;
 		if (a.target && a.target !== "_self") return;
 		if (a.hasAttribute("download")) return;
 		var url;
@@ -161,7 +173,9 @@
 		if (url.pathname === window.location.pathname && url.search === window.location.search) return;
 		showSkeleton();
 	});
-	window.addEventListener("pageshow", hideSkeleton);
+	window.addEventListener("pageshow", function () { hideSkeleton(); });
+	window.addEventListener("popstate", hideSkeleton);
+	window.redlibHideSkeleton = hideSkeleton;
 
 	var RECENT_KEY = "redlib-recent-searches";
 	function readRecent() {
@@ -338,6 +352,7 @@ function initImageViewer() {
 	window.addEventListener("popstate", function () {
 		pushed = false;
 		removeOverlay();
+		if (window.redlibHideSkeleton) window.redlibHideSkeleton();
 	});
 	document.addEventListener("keydown", function (e) {
 		if (e.key === "Escape" && overlay) close();
