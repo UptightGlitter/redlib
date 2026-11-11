@@ -260,6 +260,7 @@
 		}
 	}, true);
 
+	initImageViewer();
 	initBackSwipe();
 
 	var sel = document.getElementById("theme");
@@ -274,6 +275,75 @@
 /* Edge back-swipe for the installed app (no browser back button in fullscreen).
    Threshold is the smaller of 80px and 30% of the viewport: a 390px phone triggers
    at 80px, and a narrower window never asks for a drag longer than a short thumb move. */
+/* Image posts link to the proxied file (/img, /preview). That response is not
+   an HTML page, so glass.js never loads and the edge swipe cannot run.
+   Open those links in an overlay on this page instead. The href stays put
+   for no-JS, long-press, and open-in-new-tab. */
+function initImageViewer() {
+	var overlay = null;
+	var pushed = false;
+	var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+	function removeOverlay() {
+		if (!overlay) return;
+		overlay.remove();
+		overlay = null;
+		document.body.classList.remove("image-open");
+	}
+	function close() {
+		if (pushed) {
+			pushed = false;
+			history.back();
+			return;
+		}
+		removeOverlay();
+	}
+	function open(href, alt) {
+		if (overlay) return;
+		overlay = document.createElement("div");
+		overlay.className = "image-viewer" + (reduce ? " reduced" : "");
+		overlay.setAttribute("role", "dialog");
+		overlay.setAttribute("aria-modal", "true");
+		overlay.setAttribute("aria-label", alt || "Image");
+		overlay.innerHTML = '<img alt="">';
+		var img = overlay.querySelector("img");
+		img.alt = alt || "Image";
+		img.src = href;
+		document.body.appendChild(overlay);
+		document.body.classList.add("image-open");
+		try {
+			history.pushState({ redlibImage: 1 }, "");
+			pushed = true;
+		} catch (err) {
+			pushed = false;
+		}
+	}
+	function imageLink(node) {
+		var a = node && node.closest ? node.closest("a") : null;
+		if (!a || a.hasAttribute("download") || a.target === "_blank") return null;
+		if (a.classList.contains("post_media_image")) return a;
+		var href = a.getAttribute("href") || "";
+		if (/^\/(img|preview|thumb)\//.test(href) && a.querySelector("img")) return a;
+		return null;
+	}
+	document.addEventListener("click", function (e) {
+		if (e.defaultPrevented || e.button !== 0) return;
+		if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+		var a = imageLink(e.target);
+		if (!a) return;
+		e.preventDefault();
+		var pic = a.querySelector("img");
+		open(a.href, pic && pic.alt);
+	});
+	window.addEventListener("popstate", function () {
+		pushed = false;
+		removeOverlay();
+	});
+	document.addEventListener("keydown", function (e) {
+		if (e.key === "Escape" && overlay) close();
+	});
+}
+
 function initBackSwipe() {
 	if (!window.matchMedia) return;
 	var coarse = window.matchMedia("(pointer: coarse)");
@@ -291,11 +361,11 @@ function initBackSwipe() {
 
 	var active = null;
 	var raf = 0;
-	var state = { x: -64, y: 0, p: 0 };
+	var state = { x: -64, p: 0 };
 
 	function paint() {
 		raf = 0;
-		el.style.transform = "translate3d(" + state.x + "px," + state.y + "px,0)";
+		el.style.transform = "translate3d(" + state.x + "px,-50%,0)";
 		el.style.opacity = state.p <= 0 ? "0" : String(Math.min(1, 0.4 + state.p * 0.6));
 		el.style.setProperty("--swipe-p", String(state.p));
 		if (!reduce.matches) disc.style.transform = "scale(" + (0.72 + state.p * 0.28) + ")";
@@ -317,18 +387,27 @@ function initBackSwipe() {
 		return false;
 	}
 	function goBack() {
+		var viewer = document.querySelector(".image-viewer");
+		if (viewer) {
+			if (history.state && history.state.redlibImage) window.history.back();
+			else {
+				viewer.remove();
+				document.body.classList.remove("image-open");
+			}
+			return;
+		}
 		if (window.history.length > 1) window.history.back();
 		else window.location.href = "/";
 	}
 
 	document.addEventListener("touchstart", function (e) {
 		if (!enabled() || !e.touches || e.touches.length !== 1) return;
+		if (window.visualViewport && window.visualViewport.scale > 1.01) return;
 		var t = e.touches[0];
 		if (t.clientX > 30) return;
 		if (blocked(e.target)) return;
 		active = { id: t.identifier, x0: t.clientX, y0: t.clientY, dx: 0, dy: 0, decided: false, aborted: false };
 		el.classList.remove("cancel", "pulse", "demo");
-		state.y = t.clientY - 28;
 		state.p = 0;
 		state.x = 0;
 		schedule();
@@ -356,7 +435,6 @@ function initBackSwipe() {
 		var travel = Math.min(dx, limit);
 		state.p = Math.min(1, dx / limit);
 		state.x = travel * 0.9;
-		state.y = t.clientY - 28;
 		active.dx = dx;
 		schedule();
 	}, { passive: true });

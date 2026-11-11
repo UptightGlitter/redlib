@@ -54,6 +54,26 @@
 	</details>
 {%- endmacro %}
 
+{% macro post_chips(post) -%}
+{% if post.author.flair.flair_parts.len() > 0 || post.flair.flair_parts.len() > 0 || post.flags.nsfw || post.flags.spoiler || post.post_type != "self" %}
+<div class="post_badges">
+	{% if post.author.flair.flair_parts.len() > 0 %}
+	<small class="author_flair" title="{% for part in post.author.flair.flair_parts %}{% if part.flair_part_type == "text" %}{{ part.value }}{% endif %}{% endfor %}"{% if post.author.flair.background_color != "" %} style="--flair: {{ post.author.flair.background_color }};"{% endif %}>{% call render_flair(post.author.flair.flair_parts) %}</small>
+	{% endif %}
+	{% if post.flair.flair_parts.len() > 0 %}
+	<a href="/r/{{ post.community }}/search?q=flair_name%3A%22{{ post.flair.text }}%22&restrict_sr=on"
+		class="post_flair" title="{{ post.flair.text }}"{% if post.flair.background_color != "" %} style="--flair: {{ post.flair.background_color }};"{% endif %}
+		dir="ltr">{% call render_flair(post.flair.flair_parts) %}</a>
+	{% endif %}
+	{% if post.flags.nsfw %}<span class="nsfw">NSFW</span>{% endif %}
+	{% if post.flags.spoiler %}<span class="spoiler">Spoiler</span>{% endif %}
+	{% if post.post_type != "self" %}
+	<span class="type_badge">{% if post.post_type == "link" %}Link{% else if post.post_type == "image" %}Image{% else if post.post_type == "video" %}Video{% else if post.post_type == "gif" %}GIF{% else if post.post_type == "gallery" %}Gallery{% else %}{{ post.post_type }}{% endif %}</span>
+	{% endif %}
+</div>
+{% endif %}
+{%- endmacro %}
+
 {% macro render_hls_notification(redirect_url) -%}
 {% if post.post_type == "video" && !post.media.alt_url.is_empty() && prefs.hide_hls_notification != "on" %}
 <div class="post_notification"><p><a href="/settings/update/?use_hls=on&redirect={{ redirect_url }}">Enable HLS</a> to view with audio, or <a href="/settings/update/?hide_hls_notification=on&redirect={{ redirect_url }}">disable this notification</a></p></div>
@@ -64,16 +84,16 @@
 {% set post_should_be_blurred = (post.flags.nsfw && prefs.blur_nsfw=="on") || (post.flags.spoiler && prefs.blur_spoiler=="on") -%}
 <!-- POST CONTENT -->
 <div class="post highlighted{% if post_should_be_blurred %} post_blurred{% endif %}">
+	<div class="post_lead">
 	<p class="post_header">
+		<span class="meta_line">
 		{% if post.flags.stickied %}<span class="pin">Pinned</span><span class="dot">&bull;</span>{% endif %}
 		<a class="post_subreddit" href="/r/{{ post.community }}">r/{{ post.community }}</a>
 		<span class="dot">&bull;</span>
 		<a class="post_author {{ post.author.distinguished }}" href="/user/{{ post.author.name }}">u/{{ post.author.name }}</a>
-		{% if post.author.flair.flair_parts.len() > 0 %}
-			<small class="author_flair"{% if post.author.flair.background_color != "" %} style="--flair: {{ post.author.flair.background_color }};"{% endif %}>{% call render_flair(post.author.flair.flair_parts) %}</small>
-		{% endif %}
 		<span class="dot">&bull;</span>
 		<span class="created" title="{{ post.created }}">{{ post.rel_time }}</span>
+		</span>
 		{% if !post.awards.is_empty() && prefs.hide_awards != "on" %}
 		<span class="dot">&bull;</span>
 		<span class="awards">
@@ -86,15 +106,9 @@
 		</span>
 		{% endif %}
 	</p>
-	<h1 class="post_title">
-		{% if post.flair.flair_parts.len() > 0 %}
-			<a href="/r/{{ post.community }}/search?q=flair_name%3A%22{{ post.flair.text }}%22&restrict_sr=on"
-				class="post_flair"{% if post.flair.background_color != "" %} style="--flair: {{ post.flair.background_color }};"{% endif %}>{% call render_flair(post.flair.flair_parts) %}</a>
-		{% endif %}
-		{{ post.title }}
-		{% if post.flags.nsfw %} <small class="nsfw">NSFW</small>{% endif %}
-		{% if post.flags.spoiler %} <small class="spoiler">Spoiler</small>{% endif %}
-	</h1>
+	{% call post_chips(post) %}
+	<h1 class="post_title">{{ post.title }}</h1>
+	</div>
 
 	<!-- POST MEDIA -->
 	<!-- post_type: {{ post.post_type }} -->
@@ -219,7 +233,9 @@
 {% macro post_in_list(post) -%}
 {% set post_should_be_blurred = (post.flags.nsfw && prefs.blur_nsfw=="on") || (post.flags.spoiler && prefs.blur_spoiler=="on") -%}
 <div class="post{% if post.flags.stickied %} stickied{% endif %}{% if post_should_be_blurred %} post_blurred{% endif %}" id="{{ post.id }}">
+	<div class="post_lead">
 	<p class="post_header">
+		<span class="meta_line">
 		{% if post.flags.stickied %}<span class="pin">Pinned</span><span class="dot">&bull;</span>{% endif %}
 		{% let community -%}
 		{% if post.community.starts_with("u_") -%}
@@ -230,36 +246,24 @@
 		<a class="post_subreddit" href="/{{ community }}">{{ community }}</a>
 		<span class="dot">&bull;</span>
 		<a class="post_author {{ post.author.distinguished }}" href="/u/{{ post.author.name }}">u/{{ post.author.name }}</a>
-		{% if post.author.flair.flair_parts.len() > 0 %}
-			<small class="author_flair"{% if post.author.flair.background_color != "" %} style="--flair: {{ post.author.flair.background_color }};"{% endif %}>{% call render_flair(post.author.flair.flair_parts) %}</small>
-		{% endif %}
 		<span class="dot">&bull;</span>
 		<span class="created" title="{{ post.created }}">{{ post.rel_time }}</span>
+		</span>
 		{% if !post.awards.is_empty() && prefs.hide_awards != "on" %}
+		<span class="awards">
 			{% for award in post.awards.clone() %}
 			<span class="award" title="{{ award.name }}">
 				<img alt="{{ award.name }}" src="{{ award.icon_url }}" width="16" height="16"/>
 			</span>
 			{% endfor %}
+		</span>
 		{% endif %}
 	</p>
-	{% if post.flair.flair_parts.len() > 0 || post.flags.nsfw || post.flags.spoiler || post.post_type != "self" %}
-	<div class="post_badges">
-		{% if post.flair.flair_parts.len() > 0 %}
-			<a href="/r/{{ post.community }}/search?q=flair_name%3A%22{{ post.flair.text }}%22&restrict_sr=on"
-				class="post_flair"{% if post.flair.background_color != "" %} style="--flair: {{ post.flair.background_color }};"{% endif %}
-				dir="ltr">{% call render_flair(post.flair.flair_parts) %}</a>
-		{% endif %}
-		{% if post.flags.nsfw %}<span class="nsfw">NSFW</span>{% endif %}
-		{% if post.flags.spoiler %}<span class="spoiler">Spoiler</span>{% endif %}
-		{% if post.post_type != "self" %}
-		<span class="type_badge">{% if post.post_type == "link" %}{{ post.domain }}{% else if post.post_type == "image" %}Image{% else if post.post_type == "video" %}Video{% else if post.post_type == "gif" %}GIF{% else if post.post_type == "gallery" %}Gallery{% else %}{{ post.post_type }}{% endif %}</span>
-		{% endif %}
-	</div>
-	{% endif %}
+	{% call post_chips(post) %}
 	<h2 class="post_title">
 		<a href="{{ post.permalink }}">{{ post.title }}</a>
 	</h2>
+	</div>
 	<!-- POST MEDIA/THUMBNAIL -->
 	{% if post.post_type == "image" %}
 	<div class="post_media_content">
