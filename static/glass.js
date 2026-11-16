@@ -1,6 +1,96 @@
 (function () {
 	document.documentElement.classList.add("js");
 
+	var pageName = document.getElementById("page_name");
+	if (pageName) {
+		var path = location.pathname || "/";
+		var label = "Redlib";
+		var sub = path.match(/^\/r\/([^/]+)/);
+		var user = path.match(/^\/(?:user|u)\/([^/]+)/);
+		if (path === "/" || /^\/(hot|new|top|rising|controversial)\/?$/.test(path)) label = "Home";
+		else if (path === "/search" || path.indexOf("/search") === 0) label = "Search";
+		else if (path.indexOf("/settings") === 0) label = "Settings";
+		else if (sub) {
+			var name = decodeURIComponent(sub[1]);
+			label = name === "popular" ? "Popular" : name === "all" ? "All" : "r/" + name;
+		} else if (user) label = "u/" + decodeURIComponent(user[1]);
+		pageName.textContent = label;
+	}
+
+	(function initAppBar() {
+		var bar = document.querySelector(".topbar");
+		if (!bar || !window.matchMedia) return;
+		var mq = window.matchMedia("(max-width: 768px)");
+		var reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+		var THRESHOLD = 8;
+		var anchor = window.scrollY || 0;
+		var ticking = false;
+		var viewerWas = false;
+		var savedHide = false;
+		function feedsOpen() {
+			var feeds = document.getElementById("feeds");
+			return !!(feeds && feeds.open);
+		}
+		function viewerOpen() { return document.body.classList.contains("image-open"); }
+		function barHeight() {
+			var pill = bar.querySelector(".chrome");
+			return (pill && pill.offsetHeight) || bar.offsetHeight || 54;
+		}
+		function paint(hide) {
+			bar.classList.toggle("bar-instant", reduce.matches);
+			bar.classList.toggle("bar-hidden", !!hide);
+		}
+		function update() {
+			ticking = false;
+			var viewing = viewerOpen();
+			if (viewing && !viewerWas) {
+				savedHide = bar.classList.contains("bar-hidden");
+				viewerWas = true;
+			}
+			if (viewing) {
+				paint(true);
+				anchor = window.scrollY || 0;
+				return;
+			}
+			if (viewerWas) {
+				viewerWas = false;
+				paint(savedHide);
+				anchor = window.scrollY || 0;
+				return;
+			}
+			if (!mq.matches || feedsOpen()) {
+				paint(false);
+				anchor = window.scrollY || 0;
+				return;
+			}
+			var y = window.scrollY || 0;
+			if (y < barHeight()) {
+				paint(false);
+				anchor = y;
+				return;
+			}
+			var dy = y - anchor;
+			if (dy > THRESHOLD) {
+				paint(true);
+				anchor = y;
+			} else if (dy < -THRESHOLD) {
+				paint(false);
+				anchor = y;
+			}
+		}
+		window.addEventListener("scroll", function () {
+			if (ticking) return;
+			ticking = true;
+			requestAnimationFrame(update);
+		}, { passive: true });
+		var feeds = document.getElementById("feeds");
+		if (feeds) feeds.addEventListener("toggle", update);
+		if (window.MutationObserver) {
+			new MutationObserver(update).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+		}
+		update();
+	})();
+
 	var nav = document.querySelector("nav.tabbar");
 	if (nav && window.matchMedia) {
 		var mq = window.matchMedia("(max-width: 600px)");

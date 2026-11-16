@@ -26,7 +26,7 @@
 		<!-- PWA Manifest -->
 		<link rel="manifest" type="application/json" href="/manifest.json">
 		<link rel="shortcut icon" type="image/x-icon" href="/favicon.ico"> 
-		<link rel="stylesheet" type="text/css" href="/style.css?v=glass15">
+		<link rel="stylesheet" type="text/css" href="/style.css?v=glass16">
 		<!-- Video quality -->
 		<div id="video_quality" data-value="{{ prefs.video_quality }}"></div>
 		{% endblock %}
@@ -45,6 +45,7 @@
 			<div id="logo">
 				<a id="redlib" href="/"><span class="mark" aria-hidden="true">r</span><span class="word"><span id="red">red</span><span id="lib">lib.</span></span></a>
 			</div>
+			<span class="page-name" id="page_name"></span>
 			{% block search %}{% endblock %}
 			<div id="links">
 				<a id="reddit_link" {% if prefs.disable_visit_reddit_confirmation != "on" %}href="#popup"{% else %}href="https://www.reddit.com{{ url }}" rel="nofollow"{% endif %}>

@@ -4083,6 +4083,75 @@ a.post_flair:hover,
 .post_badges > .spoiler::before { background: var(--g-acc); }
 .post_badges > .nsfw::before { background: #f87171; }
 
+/* Feeds menu: open from the trigger, and separate each name. */
+@keyframes feeds-open {
+	from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+	to { opacity: 1; transform: translateY(0) scale(1); }
+}
+details#feeds[open] > #feed_list {
+	transform-origin: top center;
+	animation: feeds-open 180ms ease-out both;
+}
+#feed_list a {
+	border-radius: 10px;
+	background: rgba(var(--g-tt), .08);
+	border: 1px solid rgba(var(--g-line), .10);
+	color: var(--g-text);
+}
+@media (min-width: 900px) {
+	#feed_list a { margin: 2px 8px; }
+}
+#feed_list a:hover,
+#feed_list a:active {
+	background: rgba(var(--g-accf), .18);
+	color: var(--g-acc2);
+}
+#feed_list a.selected {
+	background: rgba(var(--g-accf), .24);
+	color: var(--g-text);
+	box-shadow: inset 0 0 0 1px rgba(var(--g-accf), .55);
+	font-weight: 600;
+}
+#feed_list a:focus-visible {
+	outline: 2px solid var(--g-acc2);
+	outline-offset: 2px;
+}
+@media (max-width: 899px) {
+	.tabbar details#feeds[open] > #feed_list {
+		transform-origin: center bottom;
+	}
+	.tabbar #feed_list a {
+		background: rgba(var(--g-tt), .08);
+		border: 1px solid rgba(var(--g-line), .10);
+		color: var(--g-text);
+	}
+	.tabbar #feed_list a:hover,
+	.tabbar #feed_list a:active {
+		background: rgba(var(--g-accf), .18);
+		color: var(--g-acc2);
+		border-color: transparent;
+	}
+	.tabbar #feed_list a.selected {
+		background: var(--glass-nav-active, rgba(var(--g-accf), .24));
+		color: var(--g-text);
+		box-shadow: inset 0 0 0 1px var(--glass-active-border, rgba(var(--g-accf), .55));
+		border-color: transparent;
+		font-weight: 600;
+	}
+	.tabbar #feed_list a:focus-visible {
+		outline: 2px solid var(--g-acc2);
+		outline-offset: 2px;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	details#feeds[open] > #feed_list,
+	.tabbar details#feeds[open] > #feed_list {
+		animation: none;
+		transform: none;
+		opacity: 1;
+	}
+}
+
 .image-viewer {
 	position: fixed;
 	inset: 0;
@@ -4102,4 +4171,199 @@ body.image-open { overflow: hidden; }
 body.image-open .swipe-back { z-index: 90; }
 @media (prefers-reduced-motion: reduce) {
 	.image-viewer { transition: none; }
+}
+
+/* Floating glass bar: logo and the current page name. */
+.page-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	margin-left: 16px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	text-align: right;
+	color: var(--g-text);
+	font: 600 17px/1.2 var(--md-ref-typeface-plain, ui-sans-serif, system-ui, sans-serif);
+}
+.page-name:empty { display: none; }
+div#sort_options,
+div#listing_options {
+	background: rgba(var(--g-tt), .05);
+	border-color: rgba(var(--g-line), .12);
+}
+div#sort_options > a,
+div#listing_options > a {
+	height: 28px;
+	padding: 0 10px;
+	font-size: 13px;
+}
+div#sort_options > a.selected,
+div#listing_options > a.selected {
+	background: var(--g-fb);
+	color: var(--g-text);
+}
+@media (min-width: 900px) {
+	#logo {
+		display: flex;
+		grid-column: 1;
+		grid-row: 1;
+		align-items: center;
+		gap: 10px;
+		min-width: 0;
+		max-width: 320px;
+		justify-self: start;
+	}
+	#redlib { grid-column: auto; position: relative; }
+}
+@media (min-width: 900px) {
+	.topbar {
+		top: calc(env(safe-area-inset-top, 0px) + 8px);
+		margin-top: calc(env(safe-area-inset-top, 0px) + 8px);
+		height: 54px;
+		min-height: 54px;
+		padding: 0 14px;
+		border-radius: 24px;
+		align-items: center;
+		box-sizing: border-box;
+		grid-template-columns: auto auto minmax(180px, 1fr) auto auto minmax(0, 1fr);
+	}
+	.page-name {
+		grid-column: 6;
+		grid-row: 1;
+		justify-self: stretch;
+		align-self: center;
+	}
+	#logo { gap: 10px; overflow: visible; align-items: center; max-width: none; }
+	#redlib { align-items: center; line-height: 1; }
+	#redlib .mark {
+		width: 30px;
+		height: 30px;
+		border-radius: 10px;
+		font-size: 16px;
+		line-height: 1;
+	}
+}
+@media (max-width: 899px) {
+	/* The tab bar and the feeds panel live inside .topbar. A transform on
+	   .topbar would become their containing block, so the slide lives on
+	   .chrome and .topbar stays display:contents. The safe area sits above
+	   the pill; it is not padding inside the glass. */
+	.topbar { display: contents; }
+	.chrome {
+		display: flex;
+		align-items: center;
+		position: fixed;
+		top: calc(env(safe-area-inset-top, 0px) + 8px);
+		left: 10px;
+		right: 10px;
+		z-index: 55;
+		isolation: isolate;
+		box-sizing: border-box;
+		height: 54px;
+		margin: 0;
+		padding: 0 14px;
+		border-radius: 24px;
+		background: var(--glass-surface, var(--md-sys-color-surface-container));
+		border: var(--glass-border, 1px solid var(--md-sys-color-outline-variant));
+		border-top-color: var(--glass-border-top, var(--md-sys-color-outline-variant));
+		box-shadow: var(--glass-shadow, var(--md-sys-elevation-level2));
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+		overflow: visible;
+		transform: translateY(0);
+		transition: transform .2s ease;
+	}
+	.chrome::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		border-radius: inherit;
+		background: var(--glass-surface, var(--md-sys-color-surface-container));
+		-webkit-backdrop-filter: var(--glass-blur, blur(20px) saturate(125%));
+		backdrop-filter: var(--glass-blur, blur(20px) saturate(125%));
+	}
+	.topbar.bar-hidden .chrome {
+		transform: translateY(calc(-100% - env(safe-area-inset-top, 0px) - 16px));
+	}
+	.topbar.bar-instant .chrome,
+	.chrome.bar-instant { transition: none; }
+	.chrome > nav:not(.tabbar) {
+		display: flex;
+		align-items: center;
+		align-self: center;
+		width: 100%;
+		min-width: 0;
+		min-height: 0;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		justify-content: space-between;
+		gap: 0;
+		border-radius: 0;
+		background: transparent;
+		box-shadow: none;
+		position: static;
+		overflow: visible;
+	}
+	.chrome > nav:not(.tabbar)::before { content: none; }
+	#logo {
+		position: static;
+		display: flex;
+		align-items: center;
+		order: 0;
+		gap: 8px;
+		width: auto;
+		height: auto;
+		flex: 0 0 auto;
+		overflow: visible;
+	}
+	.page-name { order: 1; }
+	#redlib {
+		display: flex;
+		align-items: center;
+		flex: 0 0 auto;
+		gap: 8px;
+		height: auto;
+		font-size: 17px;
+		line-height: 1;
+		overflow: visible;
+	}
+	#redlib .mark {
+		width: 30px;
+		height: 30px;
+		border-radius: 10px;
+		font-size: 16px;
+		line-height: 1;
+		flex: none;
+	}
+	#redlib .word { display: inline; line-height: 1; }
+	#searchbox,
+	#links { display: none; }
+	main,
+	main:has(#settings) {
+		padding-top: calc(env(safe-area-inset-top, 0px) + 8px + 54px + 18px);
+	}
+	#column_one > form#sort,
+	#column_one > div#sort { margin-top: 14px; }
+	div#sort_options,
+	div#listing_options {
+		background: rgba(var(--g-tt), .05);
+		border-color: rgba(var(--g-line), .12);
+	}
+	div#sort_options > a,
+	div#listing_options > a {
+		height: 28px;
+		padding: 0 10px;
+		font-size: 12px;
+	}
+	div#sort_options > a.selected,
+	div#listing_options > a.selected {
+		background: var(--g-fb);
+		color: var(--g-text);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.chrome { transition: none; }
 }
