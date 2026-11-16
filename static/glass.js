@@ -457,11 +457,14 @@ function initBackSwipe() {
 	function enabled() { return coarse.matches || narrow.matches; }
 	function threshold() { return Math.min(80, window.innerWidth * 0.3); }
 
+	var clip = document.createElement("div");
+	clip.className = "swipe-clip";
 	var el = document.createElement("div");
 	el.className = "swipe-back";
 	el.setAttribute("aria-hidden", "true");
 	el.innerHTML = '<div class="swipe-back-disc"><span class="swipe-back-ring"></span><svg class="swipe-back-arrow" viewBox="0 0 24 24"><path d="M14 6 8 12l6 6"/></svg></div>';
-	document.body.appendChild(el);
+	clip.appendChild(el);
+	document.body.appendChild(clip);
 	var disc = el.querySelector(".swipe-back-disc");
 
 	var active = null;

@@ -2833,7 +2833,7 @@ main, #column_one, #posts, .post { min-width: 0; max-width: 100%; }
 
 @media (max-width: 899px) {
 	html, body { max-width: 100%; }
-	body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+	body { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 	#redlib { display: none; }
 	#links #settings_link { display: none; }
 	#logo {
@@ -2920,7 +2920,7 @@ main, #column_one, #posts, .post { min-width: 0; max-width: 100%; }
 		isolation: isolate;
 		left: 10px;
 		right: 10px;
-		bottom: calc(10px + env(safe-area-inset-bottom));
+		bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
 		height: 62px;
 		margin: 0;
 		padding: 0;
@@ -2932,7 +2932,7 @@ main, #column_one, #posts, .post { min-width: 0; max-width: 100%; }
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
 		min-width: 0;
-		max-width: calc(100vw - 20px);
+		box-sizing: border-box;
 	}
 	.tabbar::before {
 		content: "";
@@ -2948,7 +2948,7 @@ main, #column_one, #posts, .post { min-width: 0; max-width: 100%; }
 	.tabbar .tab-feeds { display: flex; min-width: 0; height: 100%; position: relative; }
 	.tabbar { transition: transform .2s ease; }
 	.tabbar.nav-hidden {
-		transform: translateY(calc(100% + env(safe-area-inset-bottom) + 12px));
+		transform: translateY(calc(100% + env(safe-area-inset-bottom, 0px) + 12px));
 		pointer-events: none;
 	}
 	.tabbar.nav-instant { transition: none; }
@@ -3025,7 +3025,7 @@ main, #column_one, #posts, .post { min-width: 0; max-width: 100%; }
 		top: auto;
 		left: 12px;
 		right: 12px;
-		bottom: calc(84px + env(safe-area-inset-bottom));
+		bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 		width: auto;
 		min-width: 0;
 		max-width: none;
@@ -3562,12 +3562,21 @@ body.feeds-open .savebar { display: none !important; }
 }
 #recent_searches #clear_recent { margin-top: 12px; }
 
-/* Back-swipe indicator. Stays vertically centred; glass.js only moves it on X. */
-.swipe-back {
+/* Back-swipe indicator. The clip shell is the viewport, so the arrow can
+   sit off the left edge without widening the page (iOS pans to that overflow). */
+.swipe-clip {
 	position: fixed;
+	inset: 0;
+	z-index: 80;
+	overflow: hidden;
+	pointer-events: none;
+	contain: paint;
+}
+body.image-open .swipe-clip { z-index: 90; }
+.swipe-back {
+	position: absolute;
 	left: env(safe-area-inset-left, 0px);
 	top: 50%;
-	z-index: 80;
 	width: 56px;
 	height: 56px;
 	margin: 0;
@@ -4168,7 +4177,6 @@ details#feeds[open] > #feed_list {
 	touch-action: pinch-zoom;
 }
 body.image-open { overflow: hidden; }
-body.image-open .swipe-back { z-index: 90; }
 @media (prefers-reduced-motion: reduce) {
 	.image-viewer { transition: none; }
 }
@@ -4221,7 +4229,7 @@ div#listing_options > a.selected {
 		margin-top: calc(env(safe-area-inset-top, 0px) + 8px);
 		height: 54px;
 		min-height: 54px;
-		padding: 0 14px;
+		padding: 0 20px;
 		border-radius: 24px;
 		align-items: center;
 		box-sizing: border-box;
@@ -4261,7 +4269,7 @@ div#listing_options > a.selected {
 		box-sizing: border-box;
 		height: 54px;
 		margin: 0;
-		padding: 0 14px;
+		padding: 0 20px;
 		border-radius: 24px;
 		background: var(--glass-surface, var(--md-sys-color-surface-container));
 		border: var(--glass-border, 1px solid var(--md-sys-color-outline-variant));
